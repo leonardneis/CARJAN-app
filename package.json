@@ -1,0 +1,44 @@
+{
+  "name": "carjan-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/main/index.js",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leonardneis/CARJAN-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/leonardneis/CARJAN-app/issues"
+  },
+  "homepage": "https://github.com/leonardneis/CARJAN-app#readme",
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "concurrently": "^8.2.2",
+    "electron": "^36.2.1",
+    "vite": "^6.3.5",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "electron-builder": "^26.0.12",
+    "electron-store": "^10.0.1",
+    "vue": "^3.5.14"
+  },
+  "build": {
+    "appId": "com.carjan.app",
+    "files": [
+      "dist/**/*",
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ]
+  }
+}
+
