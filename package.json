@@ -1,44 +1,42 @@
 {
   "name": "carjan-app",
   "version": "1.0.0",
-  "description": "",
+  "license": "MIT",
   "main": "src/main/index.js",
-  "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "build": "vite build && electron-builder",
-    "preview": "vite preview"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/leonardneis/CARJAN-app.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/leonardneis/CARJAN-app/issues"
-  },
-  "homepage": "https://github.com/leonardneis/CARJAN-app#readme",
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.4",
-    "concurrently": "^8.2.2",
-    "electron": "^36.2.1",
-    "vite": "^6.3.5",
-    "wait-on": "^7.2.0"
-  },
   "dependencies": {
+    "@primeuix/themes": "^1.1.1",
+    "animejs": "^4.0.2",
     "electron-builder": "^26.0.12",
     "electron-store": "^10.0.1",
-    "vue": "^3.5.14"
+    "primeicons": "^7.0.0",
+    "primevue": "^4.3.4",
+    "vue": "^3.5.14",
+    "vue-router": "^4.5.1"
   },
-  "build": {
-    "appId": "com.carjan.app",
-    "files": [
-      "dist/**/*",
-      "src/**/*",
-      "node_modules/**/*",
-      "package.json"
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "@vitest/ui": "^3.1.4",
+    "@vue/test-utils": "^2.4.6",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
+    "electron": "^36.2.1",
+    "esbuild": "^0.25.4",
+    "jsdom": "^26.1.0",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.4",
+    "wait-on": "^7.2.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "test": "vitest run",
+    "test:ui": "vitest --ui"
+  },
+  "vitest": {
+    "include": [
+      "src/**/*.test.js"
     ]
   }
 }
-
