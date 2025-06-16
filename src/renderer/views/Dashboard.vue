@@ -85,20 +85,59 @@
             />
           </template>
         </Card>
-
-        <!-- Editor Placeholder -->
+        <!-- CARJAN Editor -->
         <Card v-if="activeItem === 'editor'" class="glass editor-card">
           <template #title>
             <div class="card-header">
               <i class="pi pi-code"></i>
-              <span>Editor</span>
+              <span>CARJAN Editor</span>
             </div>
           </template>
           <template #content>
-            <div class="editor-placeholder">
-              <i class="pi pi-code" style="font-size: 4rem; opacity: 0.3"></i>
-              <h3>Editor wird geladen...</h3>
-              <p>Hier wird der CARJAN-Editor implementiert.</p>
+            <div class="editor-content">
+              <div class="editor-info">
+                <h3>CARJAN Scenario Editor</h3>
+                <p>
+                  Create and edit CARLA simulation scenarios with an intuitive
+                  grid-based interface.
+                </p>
+
+                <div class="editor-features">
+                  <div class="feature">
+                    <i class="pi pi-th-large"></i>
+                    <span>Interactive Grid</span>
+                  </div>
+                  <div class="feature">
+                    <i class="pi pi-users"></i>
+                    <span>Entity Management</span>
+                  </div>
+                  <div class="feature">
+                    <i class="pi pi-share-alt"></i>
+                    <span>Path Planning</span>
+                  </div>
+                  <div class="feature">
+                    <i class="pi pi-map"></i>
+                    <span>Map Integration</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="editor-actions">
+                <Button
+                  label="Open CARJAN Editor"
+                  icon="pi pi-external-link"
+                  class="glass editor-launch-btn"
+                  @click="openCarjanEditor"
+                  size="large"
+                />
+                <Button
+                  label="Load Sample Scenario"
+                  icon="pi pi-play"
+                  severity="info"
+                  outlined
+                  @click="loadSampleScenario"
+                />
+              </div>
             </div>
           </template>
         </Card>
@@ -241,6 +280,20 @@ const editFile = (file) => {
 const downloadFile = (file) => {
   console.log("Download file:", file.name);
   // TODO: Implement file download
+};
+
+const openCarjanEditor = () => {
+  console.log("[Dashboard] Opening CARJAN Editor");
+  router.push("/carjan");
+};
+
+const loadSampleScenario = () => {
+  console.log("[Dashboard] Loading sample scenario");
+  // Navigate to editor with sample data
+  router.push({
+    name: "CarjanEditor",
+    query: { loadSample: "true" },
+  });
 };
 
 // Lifecycle
