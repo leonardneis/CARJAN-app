@@ -24,7 +24,7 @@ onMounted(async () => {
 
   if (!revealEl) {
     console.error("[Splash] .reveal-mask nicht gefunden");
-    setTimeout(() => router.replace({ name: "LandingPage" }), 2000);
+    setTimeout(() => router.replace({ name: "Dashboard" }), 2000);
     return;
   }
 
@@ -33,10 +33,9 @@ onMounted(async () => {
       width: ["0px", "350px"],
       duration: 2000,
       ease: "out(3)",
-
       onComplete: () => {
         console.log("[Splash] Reveal Animation abgeschlossen");
-        setTimeout(() => router.replace({ name: "LandingPage" }), 500);
+        setTimeout(() => router.replace({ name: "Dashboard" }), 500);
       },
     })
   );
