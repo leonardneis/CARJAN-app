@@ -41,16 +41,3 @@ function splashreload() {
   router.push("/");
 }
 </script>
-
-<style scoped>
-.landing-container {
-  position: relative;
-  overflow: hidden;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-</style>

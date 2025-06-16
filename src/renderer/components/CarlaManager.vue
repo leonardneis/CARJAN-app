@@ -27,12 +27,3 @@ async function startCarla() {
   if (!result) alert("CARLA konnte nicht gestartet werden.");
 }
 </script>
-
-<style scoped>
-.btn {
-  background: #1f2937;
-  color: white;
-  padding: 6px 12px;
-  border-radius: 4px;
-}
-</style>

@@ -40,42 +40,6 @@ onMounted(async () => {
       },
     })
   );
-
   timeline.play();
 });
 </script>
-
-<style scoped>
-.logo-layer.image {
-  width: 400px;
-  height: auto;
-  /* outline: auto; */
-  position: relative;
-}
-
-.reveal-mask {
-  overflow: hidden;
-  width: 0;
-  height: auto;
-  position: relative;
-  /* background-color: red; */
-}
-
-.logo-img {
-  width: 400px;
-  height: auto;
-  display: block;
-}
-
-.landing-container {
-  position: relative;
-  overflow: hidden;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle at 40% 40%, #2c2f35 0%, #141619 100%);
-  color: #fff;
-}
-</style>

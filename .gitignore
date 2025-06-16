@@ -21,6 +21,8 @@ Thumbs.db
 .idea/
 .github/
 *.code-workspace
+carjan-old/
+md-logs/
 
 # OS/Exec
 *.exe
