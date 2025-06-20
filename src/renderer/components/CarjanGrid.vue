@@ -242,106 +242,61 @@
     <!-- Bottom Control Center -->
     <motion.div
       layout
+      ref="controlCenterRef"
       class="control-center"
       :style="{
-        width: controlCenterExpanded ? '420px' : '56px',
-        height: controlCenterExpanded ? '76px' : '56px',
-        borderRadius: controlCenterExpanded ? '38px' : '28px',
+        width: debouncedControlCenterExpanded ? '280px' : '56px',
+        height: debouncedControlCenterExpanded ? '76px' : '56px',
+        borderRadius: debouncedControlCenterExpanded ? '38px' : '28px',
+        left: debouncedControlCenterExpanded
+          ? 'calc(50% - 140px)'
+          : 'calc(50% - 28px)',
       }"
+      @mouseenter="handleControlCenterMouseEnter"
+      @mouseleave="handleControlCenterMouseLeave"
     >
       <!-- Control Center Toggle Button -->
-      <Button
-        icon="pi pi-cog"
-        class="control-toggle"
-        rounded
-        text
-        @click="toggleControlCenter"
-        @mouseenter="expandControlCenter"
-      />
-      <!-- Control Center Content -->
-      <div
-        class="control-content"
-        v-show="controlCenterExpanded"
-        @mouseleave="collapseControlCenter"
+      <motion.div
+        layout
+        :style="{
+          opacity: debouncedControlCenterToggleHidden ? 0 : 1,
+          transform: debouncedControlCenterToggleHidden
+            ? 'scale(0.8)'
+            : 'scale(1)',
+        }"
+        style="position: absolute; z-index: 2"
       >
-        <!-- Mode Controls -->
+        <Button
+          ref="controlToggleRef"
+          icon="pi pi-cog"
+          class="control-toggle"
+          rounded
+          text
+          @click="toggleControlCenter"
+        />
+      </motion.div>
+      <!-- Control Center Content -->
+      <motion.div
+        layout
+        ref="controlContentRef"
+        class="control-content"
+        :style="{
+          opacity: immediateContentVisible ? 1 : 0,
+          transform: immediateContentVisible ? 'scale(1)' : 'scale(0.8)',
+          pointerEvents: immediateContentVisible ? 'auto' : 'none',
+        }"
+      >
+        <!-- Mode Display (Controls sind jetzt in der Top-Bar) -->
         <div class="control-section">
-          <span class="section-label">Mode</span>
-          <div class="mode-buttons">
-            <Button
-              :icon="getCurrentModeIcon('edit')"
-              :class="{ 'mode-active': getCurrentMode() === 'edit' }"
-              @click="setMode('edit')"
-              title="Edit Mode"
-              rounded
-              size="small"
-            />
-            <Button
-              :icon="getCurrentModeIcon('path')"
-              :class="{ 'mode-active': getCurrentMode() === 'path' }"
-              @click="setMode('path')"
-              title="Path Mode"
-              rounded
-              size="small"
-            />
-            <Button
-              :icon="getCurrentModeIcon('dbox')"
-              :class="{ 'mode-active': getCurrentMode() === 'dbox' }"
-              @click="setMode('dbox')"
-              title="Decision Box Mode"
-              rounded
-              size="small"
-            />
+          <span class="section-label">Current Mode</span>
+          <div class="mode-display">
+            <span class="current-mode" :class="`mode-${getCurrentMode()}`">
+              <i :class="getCurrentModeIcon(getCurrentMode())"></i>
+              {{ getCurrentMode().toUpperCase() }}
+            </span>
           </div>
         </div>
-
-        <!-- Zoom Controls -->
-        <div class="control-section zoom-section">
-          <span class="section-label">Zoom</span>
-          <div class="zoom-controls">
-            <Button
-              icon="pi pi-minus"
-              @click="zoomOut"
-              rounded
-              size="small"
-              text
-            />
-            <span class="zoom-level"
-              >{{ Math.round(gridStore.scale * 100) }}%</span
-            >
-            <Button
-              icon="pi pi-plus"
-              @click="zoomIn"
-              rounded
-              size="small"
-              text
-            />
-          </div>
-        </div>
-
-        <!-- View Controls -->
-        <div class="control-section">
-          <span class="section-label">View</span>
-          <div class="view-buttons">
-            <Button
-              icon="pi pi-refresh"
-              @click="resetView"
-              title="Reset View"
-              rounded
-              size="small"
-              text
-            />
-            <Button
-              icon="pi pi-bullseye"
-              @click="centerView"
-              title="Center View"
-              rounded
-              size="small"
-              text
-            />
-          </div>
-        </div>
-      </div>
+      </motion.div>
     </motion.div>
   </div>
 </template>
@@ -379,8 +334,70 @@ const isDrawingDBox = ref(false);
 const dboxStartPoint = ref(null);
 const isSpacePressed = ref(false);
 const controlCenterExpanded = ref(false);
+const controlCenterHovered = ref(false);
 const layerViewExpanded = ref(false);
 const hoveredCell = ref({ x: null, y: null });
+
+// Control center animation refs
+const controlCenterRef = ref(null);
+const controlToggleRef = ref(null);
+const controlContentRef = ref(null);
+let morphAnimation = null;
+
+// Debounced state for smooth animations with different timing
+const debouncedControlCenterExpanded = useDebouncedState(
+  controlCenterExpanded,
+  0.1
+);
+
+// Separate debounced state for content (delayed appearance only when expanding)
+const debouncedControlCenterContentVisible = useDebouncedState(
+  controlCenterExpanded,
+  0.2
+);
+
+// Separate debounced state for toggle hiding (faster)
+const debouncedControlCenterToggleHidden = useDebouncedState(
+  controlCenterExpanded,
+  0.05
+);
+
+// Immediate content visibility control (no delay on hide)
+const immediateContentVisible = ref(false);
+
+// Watch for expansion changes to handle immediate hiding
+watch(controlCenterExpanded, (newValue) => {
+  if (newValue) {
+    // When expanding, wait for debounced visibility
+    // (this will be handled by debouncedControlCenterContentVisible)
+  } else {
+    // When collapsing, hide immediately to prevent glitch
+    immediateContentVisible.value = false;
+  }
+});
+
+// Watch debounced content visibility for delayed showing
+watch(debouncedControlCenterContentVisible, (newValue) => {
+  if (newValue) {
+    immediateContentVisible.value = true;
+  }
+});
+
+function useDebouncedState(value, duration = 0.2) {
+  const debouncedValue = ref(value.value);
+
+  let timeout;
+  watch(value, (newValue) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      debouncedValue.value = newValue;
+    }, duration * 1000);
+  });
+
+  onUnmounted(() => clearTimeout(timeout));
+
+  return debouncedValue;
+}
 
 // Computed
 const transformStyle = computed(() => ({
@@ -732,45 +749,38 @@ const performZoom = (newScale) => {
   }
 };
 
-const zoomIn = () => {
-  const newScale = Math.min(5.0, gridStore.scale + 0.2);
-  performZoom(newScale);
-};
-
-const zoomOut = () => {
-  const newScale = Math.max(0.1, gridStore.scale - 0.2);
-  performZoom(newScale);
-};
-
-const resetView = () => {
-  gridStore.resetTransform();
-};
-
-const centerView = () => {
-  const rect = viewport.value.getBoundingClientRect();
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
-
-  // Berechne die Zielposition für zentrierte Ausrichtung
-  gridStore.setTranslation(
-    centerX - (gridStore.gridCols * gridStore.cellWidth * gridStore.scale) / 2,
-    centerY - (gridStore.gridRows * gridStore.cellHeight * gridStore.scale) / 2
-  );
-};
-
 // Toolbar management
 const expandControlCenter = () => {
+  controlCenterHovered.value = true;
   controlCenterExpanded.value = true;
 };
 
 const collapseControlCenter = () => {
+  controlCenterHovered.value = false;
+  // Small delay to allow mouse to move to controls
   setTimeout(() => {
-    controlCenterExpanded.value = false;
-  }, 300);
+    if (!controlCenterHovered.value) {
+      controlCenterExpanded.value = false;
+    }
+  }, 150);
+};
+
+const handleControlCenterMouseEnter = () => {
+  controlCenterHovered.value = true;
+  expandControlCenter();
+};
+
+const handleControlCenterMouseLeave = () => {
+  controlCenterHovered.value = false;
+  collapseControlCenter();
 };
 
 const toggleControlCenter = () => {
-  controlCenterExpanded.value = !controlCenterExpanded.value;
+  if (controlCenterExpanded.value) {
+    collapseControlCenter();
+  } else {
+    expandControlCenter();
+  }
 };
 
 // Layer view management
@@ -794,21 +804,7 @@ const getCurrentModeIcon = (mode) => {
   return icons[mode] || "pi pi-pencil";
 };
 
-const setMode = (mode) => {
-  // Reset all modes first
-  gridStore.pathMode = false;
-  gridStore.canvasMode = "default";
-
-  // Set the selected mode
-  if (mode === "path") {
-    gridStore.pathMode = true;
-    emit("toggle-path-mode");
-  } else if (mode === "dbox") {
-    gridStore.canvasMode = "dbox";
-    emit("toggle-dbox-mode");
-  }
-  // edit mode is default, no additional action needed
-};
+// Mode-Management ist jetzt in CarjanEditor.vue
 
 const handleDrop = (event) => {
   event.preventDefault();
@@ -872,6 +868,11 @@ onUnmounted(() => {
   document.removeEventListener("keyup", handleKeyUp);
   window.removeEventListener("mouseup", handleGlobalMouseUp);
   window.removeEventListener("blur", handleGlobalMouseUp);
+
+  // Stop any running animations
+  if (morphAnimation) {
+    morphAnimation.stop();
+  }
 });
 
 // Watch for space key state changes
@@ -925,25 +926,22 @@ watch(isSpacePressed, (newValue) => {
 .control-center {
   position: fixed;
   bottom: 40px;
-  left: 50%;
-  z-index: 1000;
+  z-index: 1500;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 30px;
+  border-radius: 28px;
   padding: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  width: 56px;
-  height: 56px;
-  transform: translateX(-50%);
-  overflow: hidden;
+  overflow: visible;
+  cursor: pointer;
+  transform-origin: center center;
 }
 
-.control-center.expanded {
+.control-center:hover {
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -959,16 +957,12 @@ watch(isSpacePressed, (newValue) => {
   display: flex;
   align-items: center;
   gap: 24px;
-  margin-left: 16px;
   flex: 1;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s ease;
-}
-
-.control-center.expanded .control-content {
-  opacity: 1;
-  transform: scale(1);
+  position: absolute;
+  left: 50px;
+  right: 12px;
+  height: 100%;
+  justify-content: space-between;
 }
 
 .control-section {
@@ -1348,11 +1342,38 @@ watch(isSpacePressed, (newValue) => {
 }
 
 .mode-buttons,
-.zoom-controls,
+.mode-display,
 .view-buttons {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.mode-display .current-mode {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mode-display .mode-edit {
+  color: #64b5f6 !important;
+  background: rgba(100, 181, 246, 0.2) !important;
+}
+
+.mode-display .mode-path {
+  color: #81c784 !important;
+  background: rgba(129, 199, 132, 0.2) !important;
+}
+
+.mode-display .mode-dbox {
+  color: #ffb74d !important;
+  background: rgba(255, 183, 77, 0.2) !important;
 }
 
 .mode-buttons .p-button.mode-active {

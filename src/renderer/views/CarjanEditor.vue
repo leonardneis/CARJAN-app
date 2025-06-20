@@ -121,9 +121,48 @@
                 <Badge v-else value="X: -, Y: -" severity="secondary" />
               </div>
             </div>
-
-            <!-- Right: Exit Button -->
+            <!-- Right: Mode Controls, Zoom Controls & Exit Button -->
             <div class="grid-controls">
+              <!-- Mode Controls -->
+              <div class="mode-controls">
+                <!-- Path Mode Toggle -->
+                <Button
+                  :label="gridStore.pathMode ? 'Exit Path Mode' : 'Path Mode'"
+                  :icon="gridStore.pathMode ? 'pi pi-times' : 'pi pi-share-alt'"
+                  :severity="gridStore.pathMode ? 'danger' : 'info'"
+                  @click="togglePathMode"
+                  size="small"
+                />
+
+                <!-- Decision Box Mode -->
+                <Button
+                  label="DBox Mode"
+                  icon="pi pi-inbox"
+                  :severity="
+                    gridStore.canvasMode === 'dbox' ? 'warning' : 'secondary'
+                  "
+                  @click="toggleDBoxMode"
+                  size="small"
+                />
+              </div>
+
+              <!-- Zoom Controls -->
+              <div class="zoom-controls">
+                <Button
+                  icon="pi pi-refresh"
+                  @click="resetGridView"
+                  v-tooltip="'Reset View'"
+                  size="small"
+                  text
+                />
+                <Button icon="pi pi-minus" @click="zoomOut" size="small" text />
+                <span class="zoom-level"
+                  >{{ Math.round(gridStore.scale * 100) }}%</span
+                >
+                <Button icon="pi pi-plus" @click="zoomIn" size="small" text />
+              </div>
+
+              <!-- Exit Button -->
               <Button
                 icon="pi pi-times"
                 label="Exit"
@@ -347,6 +386,7 @@ const toggleLayerView = () => {
   layerViewExpanded.value = !layerViewExpanded.value;
 };
 
+// Mode Management (like in CarjanEditor_old.vue)
 const togglePathMode = () => {
   if (gridStore.pathMode) {
     gridStore.endPathMode();
@@ -357,12 +397,14 @@ const togglePathMode = () => {
       life: 2000,
     });
   } else {
+    // Disable other modes first
+    gridStore.canvasMode = "default";
     gridStore.startPathMode();
     toast.add({
       severity: "info",
       summary: "Path Mode",
       detail:
-        'Click on cells to create a path. Click "Exit Path Mode" when done.',
+        "Click on cells to create a path. Click 'Exit Path Mode' when done.",
       life: 4000,
     });
   }
@@ -378,6 +420,8 @@ const toggleDBoxMode = () => {
       life: 2000,
     });
   } else {
+    // Disable other modes first
+    gridStore.pathMode = false;
     gridStore.canvasMode = "dbox";
     toast.add({
       severity: "info",
@@ -386,6 +430,17 @@ const toggleDBoxMode = () => {
       life: 3000,
     });
   }
+};
+
+// Zoom Controls (moved from CarjanGrid.vue)
+const zoomIn = () => {
+  const newScale = Math.min(5.0, gridStore.scale + 0.2);
+  gridStore.setScale(newScale);
+};
+
+const zoomOut = () => {
+  const newScale = Math.max(0.1, gridStore.scale - 0.2);
+  gridStore.setScale(newScale);
 };
 
 const resetGridView = () => {
@@ -652,19 +707,31 @@ watch(
   color: rgba(255, 255, 255, 0.7);
 }
 
+/* Grid Controls Styling */
 .grid-controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 16px;
+}
+
+.mode-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .zoom-controls {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0 0.5rem;
+  gap: 6px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 20px;
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .zoom-level {
@@ -672,6 +739,7 @@ watch(
   font-weight: 600;
   min-width: 50px;
   text-align: center;
+  color: white;
 }
 
 .status-bar {
@@ -824,6 +892,28 @@ watch(
 }
 
 /* Responsive design */
+@media (max-width: 1200px) {
+  .grid-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .mode-controls {
+    order: 1;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .zoom-controls {
+    order: 2;
+  }
+
+  .grid-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 768px) {
   .grid-header {
     flex-direction: column;
