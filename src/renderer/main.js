@@ -21,6 +21,7 @@ app.use(PrimeVue, {
     },
   },
 });
+app.directive("tooltip", Tooltip);
 app.use(router);
 app.use(createPinia());
 app.use(ToastService);

@@ -1,67 +1,116 @@
 <template>
   <div class="carjan-grid-container">
-    <!-- Layer Control Buttons -->
-    <div
-      class="layer-controls"
-      :class="{ visible: showLayerControls }"
-      @mouseenter="showLayerControls = true"
-      @mouseleave="showLayerControls = false"
-    >
-      <Button
-        icon="pi pi-eye"
-        class="layer-toggle-btn"
-        :class="{ 'p-button-outlined': !showLayerControls }"
-        rounded
-        @click="showLayerControls = !showLayerControls"
-      />
+    <!-- Top Bar (Hidden - using CarjanEditor top bar instead) -->
+    <div class="top-bar" style="display: none">
+      <!-- Scenario Info -->
+      <div class="top-bar-left">
+        <div class="scenario-info">
+          <i class="pi pi-file-edit"></i>
+          <Badge
+            v-if="gridStore.scenarioName"
+            :value="gridStore.scenarioName"
+            severity="info"
+          />
+          <span v-else class="no-scenario">No Scenario</span>
+        </div>
+      </div>
+      <!-- Layer Controls -->
+      <div class="top-bar-center">
+        <div class="layer-toggle-container">
+          <Button
+            icon="pi pi-eye"
+            class="layer-main-toggle"
+            @click="toggleLayerView"
+            size="small"
+            :class="{ 'layer-expanded': layerViewExpanded }"
+            rounded
+          />
 
-      <div class="layer-buttons" v-show="showLayerControls">
+          <div class="layer-toggles" :class="{ expanded: layerViewExpanded }">
+            <Button
+              icon="pi pi-th-large"
+              :class="{ 'p-button-success': gridStore.showGrid }"
+              @click="gridStore.toggleGrid()"
+              size="small"
+              rounded
+              v-tooltip="'Toggle Grid'"
+            />
+            <Button
+              icon="pi pi-users"
+              :class="{ 'p-button-success': gridStore.showEntities }"
+              @click="gridStore.toggleEntities()"
+              size="small"
+              rounded
+              v-tooltip="'Toggle Entities'"
+            />
+            <Button
+              icon="pi pi-share-alt"
+              :class="{ 'p-button-success': gridStore.showPaths }"
+              @click="gridStore.togglePaths()"
+              size="small"
+              rounded
+              v-tooltip="'Toggle Paths'"
+            />
+            <Button
+              icon="pi pi-map-marker"
+              :class="{ 'p-button-success': gridStore.showWaypoints }"
+              @click="gridStore.toggleWaypoints()"
+              size="small"
+              rounded
+              v-tooltip="'Toggle Waypoints'"
+            />
+            <Button
+              icon="pi pi-inbox"
+              :class="{ 'p-button-success': gridStore.showDBoxes }"
+              @click="gridStore.toggleDBoxes()"
+              size="small"
+              rounded
+              v-tooltip="'Toggle Decision Boxes'"
+            />
+          </div>
+        </div>
+        <!-- Status Info -->
+        <div class="status-info">
+          <Badge
+            :value="`${Math.round(gridStore.scale * 100)}%`"
+            severity="info"
+          />
+          <Badge
+            v-if="hoveredCell.x !== null && hoveredCell.y !== null"
+            :value="`X: ${hoveredCell.y}, Y: ${hoveredCell.x}`"
+            severity="secondary"
+          />
+          <Badge v-else value="X: -, Y: -" severity="secondary" />
+        </div>
+      </div>
+
+      <!-- Exit Button -->
+      <div class="top-bar-right">
         <Button
-          icon="pi pi-th-large"
-          :class="{ 'p-button-success': gridStore.showGrid }"
-          rounded
-          @click="gridStore.toggleGrid()"
-          v-tooltip="'Toggle Grid'"
-        />
-        <Button
-          icon="pi pi-users"
-          :class="{ 'p-button-success': gridStore.showEntities }"
-          rounded
-          @click="gridStore.toggleEntities()"
-          v-tooltip="'Toggle Entities'"
-        />
-        <Button
-          icon="pi pi-share-alt"
-          :class="{ 'p-button-success': gridStore.showPaths }"
-          rounded
-          @click="gridStore.togglePaths()"
-          v-tooltip="'Toggle Paths'"
-        />
-        <Button
-          icon="pi pi-map-marker"
-          :class="{ 'p-button-success': gridStore.showWaypoints }"
-          rounded
-          @click="gridStore.toggleWaypoints()"
-          v-tooltip="'Toggle Waypoints'"
-        />
-        <Button
-          icon="pi pi-inbox"
-          :class="{ 'p-button-success': gridStore.showDBoxes }"
-          rounded
-          @click="gridStore.toggleDBoxes()"
-          v-tooltip="'Toggle Decision Boxes'"
+          icon="pi pi-times"
+          label="Exit"
+          severity="danger"
+          @click="$emit('quit-editor')"
+          size="small"
         />
       </div>
+    </div>
+    <!-- Pan Mode Indicator -->
+    <div v-if="isSpacePressed" class="pan-mode-indicator">
+      <i class="pi pi-arrows-alt"></i>
+      <span>Pan Mode - Hold Space + Drag</span>
     </div>
 
     <!-- Grid Viewport -->
     <div
       class="grid-viewport"
       ref="viewport"
+      :style="backgroundStyle"
       @wheel="handleWheel"
       @mousedown="handleMouseDown"
       @mousemove="handleMouseMove"
       @mouseup="handleMouseUp"
+      @mouseleave="handleMouseLeave"
     >
       <div class="grid-room" :style="transformStyle">
         <!-- Grid Container -->
@@ -81,10 +130,9 @@
               pointerEvents: gridStore.canvasMode === 'dbox' ? 'auto' : 'none',
             }"
           />
-
           <!-- Coordinate System -->
           <div class="coordinate-system">
-            <!-- Column Numbers (Y-axis) -->
+            <!-- Column Numbers (X-axis - horizontal) -->
             <div class="column-numbers">
               <div
                 v-for="col in gridStore.gridCols"
@@ -93,16 +141,9 @@
               >
                 {{ col - 1 }}
               </div>
-              <Button
-                icon="pi pi-arrow-right"
-                label="y-axis"
-                text
-                size="small"
-                class="axis-label"
-              />
             </div>
 
-            <!-- Row Numbers (X-axis) -->
+            <!-- Row Numbers (Y-axis - vertical) -->
             <div class="row-numbers">
               <div
                 v-for="row in gridStore.gridRows"
@@ -111,13 +152,6 @@
               >
                 {{ row - 1 }}
               </div>
-              <Button
-                icon="pi pi-arrow-down"
-                label="x-axis"
-                text
-                size="small"
-                class="axis-label"
-              />
             </div>
           </div>
 
@@ -200,23 +234,138 @@
         </div>
       </div>
     </div>
-
     <!-- Loading Overlay -->
     <div v-if="gridStore.loading" class="grid-loading">
       <ProgressSpinner />
       <p>Loading Grid...</p>
     </div>
+    <!-- Bottom Control Center -->
+    <motion.div
+      layout
+      class="control-center"
+      :style="{
+        width: controlCenterExpanded ? '420px' : '56px',
+        height: controlCenterExpanded ? '76px' : '56px',
+        borderRadius: controlCenterExpanded ? '38px' : '28px',
+      }"
+    >
+      <!-- Control Center Toggle Button -->
+      <Button
+        icon="pi pi-cog"
+        class="control-toggle"
+        rounded
+        text
+        @click="toggleControlCenter"
+        @mouseenter="expandControlCenter"
+      />
+      <!-- Control Center Content -->
+      <div
+        class="control-content"
+        v-show="controlCenterExpanded"
+        @mouseleave="collapseControlCenter"
+      >
+        <!-- Mode Controls -->
+        <div class="control-section">
+          <span class="section-label">Mode</span>
+          <div class="mode-buttons">
+            <Button
+              :icon="getCurrentModeIcon('edit')"
+              :class="{ 'mode-active': getCurrentMode() === 'edit' }"
+              @click="setMode('edit')"
+              title="Edit Mode"
+              rounded
+              size="small"
+            />
+            <Button
+              :icon="getCurrentModeIcon('path')"
+              :class="{ 'mode-active': getCurrentMode() === 'path' }"
+              @click="setMode('path')"
+              title="Path Mode"
+              rounded
+              size="small"
+            />
+            <Button
+              :icon="getCurrentModeIcon('dbox')"
+              :class="{ 'mode-active': getCurrentMode() === 'dbox' }"
+              @click="setMode('dbox')"
+              title="Decision Box Mode"
+              rounded
+              size="small"
+            />
+          </div>
+        </div>
+
+        <!-- Zoom Controls -->
+        <div class="control-section zoom-section">
+          <span class="section-label">Zoom</span>
+          <div class="zoom-controls">
+            <Button
+              icon="pi pi-minus"
+              @click="zoomOut"
+              rounded
+              size="small"
+              text
+            />
+            <span class="zoom-level"
+              >{{ Math.round(gridStore.scale * 100) }}%</span
+            >
+            <Button
+              icon="pi pi-plus"
+              @click="zoomIn"
+              rounded
+              size="small"
+              text
+            />
+          </div>
+        </div>
+
+        <!-- View Controls -->
+        <div class="control-section">
+          <span class="section-label">View</span>
+          <div class="view-buttons">
+            <Button
+              icon="pi pi-refresh"
+              @click="resetView"
+              title="Reset View"
+              rounded
+              size="small"
+              text
+            />
+            <Button
+              icon="pi pi-bullseye"
+              @click="centerView"
+              title="Center View"
+              rounded
+              size="small"
+              text
+            />
+          </div>
+        </div>
+      </div>
+    </motion.div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch, Transition } from "vue";
 import { useGridStore } from "../store/grid";
 import { motion } from "motion-v";
 import Button from "primevue/button";
+import Badge from "primevue/badge";
 import ProgressSpinner from "primevue/progressspinner";
 
 const gridStore = useGridStore();
+
+// Define emits
+const emit = defineEmits([
+  "cell-selected",
+  "entity-selected",
+  "path-selected",
+  "toggle-path-mode",
+  "toggle-dbox-mode",
+  "quit-editor",
+  "cell-hovered",
+]);
 
 // Refs
 const viewport = ref(null);
@@ -224,17 +373,38 @@ const gridContainer = ref(null);
 const drawingCanvas = ref(null);
 
 // State
-const showLayerControls = ref(false);
 const isDragging = ref(false);
 const lastPanPoint = ref({ x: 0, y: 0 });
 const isDrawingDBox = ref(false);
 const dboxStartPoint = ref(null);
+const isSpacePressed = ref(false);
+const controlCenterExpanded = ref(false);
+const layerViewExpanded = ref(false);
+const hoveredCell = ref({ x: null, y: null });
 
 // Computed
 const transformStyle = computed(() => ({
   transform: `translate3d(${gridStore.translateX}px, ${gridStore.translateY}px, 0) scale(${gridStore.scale})`,
-  transition: "transform 0.2s ease-out",
+  transition: isDragging.value ? "none" : "transform 0.2s ease-out",
 }));
+
+const backgroundStyle = computed(() => {
+  // Very minimal scaling to prevent parallax effect
+  const baseDotSize = 30;
+  const scaleFactor = 0.95 + (gridStore.scale - 1) * 0.05; // Much more subtle scaling
+  const dotSize = baseDotSize * Math.max(0.9, Math.min(scaleFactor, 1.1)); // Very limited range
+  const offsetX = gridStore.translateX % dotSize;
+  const offsetY = gridStore.translateY % dotSize;
+
+  return {
+    backgroundImage: `radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 1px, transparent 1px)`,
+    backgroundSize: `${dotSize}px ${dotSize}px`,
+    backgroundPosition: `${offsetX}px ${offsetY}px`,
+    transition: isDragging.value
+      ? "none"
+      : "background-size 0.2s ease-out, background-position 0.2s ease-out",
+  };
+});
 
 const visiblePaths = computed(() => {
   return gridStore.paths.filter((path) => path.waypoints.length >= 2);
@@ -415,12 +585,20 @@ const handleCellHover = (cell, isEntering) => {
 
   if (cellElement) {
     if (isEntering) {
+      // Update hovered cell coordinates (X is horizontal/col, Y is vertical/row)
+      hoveredCell.value = { x: cell.row, y: cell.col };
+      emit("cell-hovered", { x: cell.col, y: cell.row }); // X=col, Y=row for correct orientation
+
       motion.animate(
         cellElement,
         { scale: 1.05, y: -2 },
         { duration: 0.2, easing: "easeOut" }
       );
     } else {
+      // Clear hovered cell coordinates
+      hoveredCell.value = { x: null, y: null };
+      emit("cell-hovered", null);
+
       motion.animate(
         cellElement,
         { scale: 1, y: 0 },
@@ -432,22 +610,27 @@ const handleCellHover = (cell, isEntering) => {
 
 const handleWheel = (event) => {
   event.preventDefault();
-  const delta = event.deltaY > 0 ? -0.1 : 0.1;
-  const newScale = gridStore.scale + delta;
-  gridStore.setScale(newScale);
+  event.stopPropagation();
+
+  // Zoom-Faktor
+  const delta = event.deltaY > 0 ? -0.15 : 0.15;
+  const newScale = Math.max(0.1, Math.min(5.0, gridStore.scale + delta));
+
+  performZoom(newScale);
 };
 
 const handleMouseDown = (event) => {
-  if (event.button === 0) {
-    // Left mouse button
+  // Nur pannen wenn Leertaste gedrückt ist
+  if (event.button === 0 && isSpacePressed.value) {
     isDragging.value = true;
     lastPanPoint.value = { x: event.clientX, y: event.clientY };
     viewport.value.style.cursor = "grabbing";
+    event.preventDefault();
   }
 };
 
 const handleMouseMove = (event) => {
-  if (isDragging.value) {
+  if (isDragging.value && isSpacePressed.value) {
     const deltaX = event.clientX - lastPanPoint.value.x;
     const deltaY = event.clientY - lastPanPoint.value.y;
 
@@ -461,8 +644,170 @@ const handleMouseMove = (event) => {
 };
 
 const handleMouseUp = () => {
-  isDragging.value = false;
-  viewport.value.style.cursor = "grab";
+  if (isDragging.value) {
+    isDragging.value = false;
+    updateCursor();
+  }
+};
+
+// Handler for when mouse leaves the viewport area
+const handleMouseLeave = (event) => {
+  // Nur bei echtem Verlassen des Viewport-Bereichs stoppen
+  if (isDragging.value && !viewport.value?.contains(event.relatedTarget)) {
+    isDragging.value = false;
+    updateCursor();
+  }
+};
+
+// Global mouse event handler to catch mouse leave from document
+const handleGlobalMouseUp = (event) => {
+  if (isDragging.value) {
+    isDragging.value = false;
+    updateCursor();
+  }
+};
+const handleKeyDown = (event) => {
+  if (event.code === "Space" && !isSpacePressed.value) {
+    event.preventDefault();
+    isSpacePressed.value = true;
+    updateCursor();
+  }
+};
+
+const handleKeyUp = (event) => {
+  if (event.code === "Space" && isSpacePressed.value) {
+    event.preventDefault();
+    isSpacePressed.value = false;
+    isDragging.value = false; // Stop dragging when space is released
+    updateCursor();
+  }
+};
+
+// Cursor management
+const updateCursor = () => {
+  if (!viewport.value) return;
+
+  if (isDragging.value && isSpacePressed.value) {
+    viewport.value.style.cursor = "grabbing";
+  } else if (isSpacePressed.value) {
+    viewport.value.style.cursor = "grab";
+  } else {
+    viewport.value.style.cursor = "default";
+  }
+};
+
+// Zoom and pan controls
+const performZoom = (newScale) => {
+  const oldScale = gridStore.scale;
+
+  if (newScale !== oldScale) {
+    // Get the grid container dimensions
+    const gridRect = gridContainer.value?.getBoundingClientRect();
+    const viewportRect = viewport.value?.getBoundingClientRect();
+
+    if (gridRect && viewportRect) {
+      // Calculate the current center of the grid in viewport coordinates
+      const gridCenterX =
+        gridRect.left + gridRect.width / 2 - viewportRect.left;
+      const gridCenterY = gridRect.top + gridRect.height / 2 - viewportRect.top;
+
+      // Calculate the viewport center
+      const viewportCenterX = viewportRect.width / 2;
+      const viewportCenterY = viewportRect.height / 2;
+
+      // Calculate scale ratio
+      const scaleRatio = newScale / oldScale;
+
+      // Adjust translation to keep the grid center fixed relative to viewport center
+      const newTranslateX =
+        gridStore.translateX -
+        (gridCenterX - viewportCenterX) * (scaleRatio - 1);
+      const newTranslateY =
+        gridStore.translateY -
+        (gridCenterY - viewportCenterY) * (scaleRatio - 1);
+
+      gridStore.setScale(newScale);
+      gridStore.setTranslation(newTranslateX, newTranslateY);
+    }
+  }
+};
+
+const zoomIn = () => {
+  const newScale = Math.min(5.0, gridStore.scale + 0.2);
+  performZoom(newScale);
+};
+
+const zoomOut = () => {
+  const newScale = Math.max(0.1, gridStore.scale - 0.2);
+  performZoom(newScale);
+};
+
+const resetView = () => {
+  gridStore.resetTransform();
+};
+
+const centerView = () => {
+  const rect = viewport.value.getBoundingClientRect();
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+
+  // Berechne die Zielposition für zentrierte Ausrichtung
+  gridStore.setTranslation(
+    centerX - (gridStore.gridCols * gridStore.cellWidth * gridStore.scale) / 2,
+    centerY - (gridStore.gridRows * gridStore.cellHeight * gridStore.scale) / 2
+  );
+};
+
+// Toolbar management
+const expandControlCenter = () => {
+  controlCenterExpanded.value = true;
+};
+
+const collapseControlCenter = () => {
+  setTimeout(() => {
+    controlCenterExpanded.value = false;
+  }, 300);
+};
+
+const toggleControlCenter = () => {
+  controlCenterExpanded.value = !controlCenterExpanded.value;
+};
+
+// Layer view management
+const toggleLayerView = () => {
+  layerViewExpanded.value = !layerViewExpanded.value;
+};
+
+// Mode management
+const getCurrentMode = () => {
+  if (gridStore.pathMode) return "path";
+  if (gridStore.canvasMode === "dbox") return "dbox";
+  return "edit";
+};
+
+const getCurrentModeIcon = (mode) => {
+  const icons = {
+    edit: "pi pi-pencil",
+    path: "pi pi-share-alt",
+    dbox: "pi pi-inbox",
+  };
+  return icons[mode] || "pi pi-pencil";
+};
+
+const setMode = (mode) => {
+  // Reset all modes first
+  gridStore.pathMode = false;
+  gridStore.canvasMode = "default";
+
+  // Set the selected mode
+  if (mode === "path") {
+    gridStore.pathMode = true;
+    emit("toggle-path-mode");
+  } else if (mode === "dbox") {
+    gridStore.canvasMode = "dbox";
+    emit("toggle-dbox-mode");
+  }
+  // edit mode is default, no additional action needed
 };
 
 const handleDrop = (event) => {
@@ -499,6 +844,17 @@ onMounted(() => {
   // Add global event listeners
   document.addEventListener("mousemove", handleMouseMove);
   document.addEventListener("mouseup", handleMouseUp);
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("keyup", handleKeyUp);
+  // Globaler MouseUp Handler für bessere Pan-Kontrolle
+  window.addEventListener("mouseup", handleGlobalMouseUp);
+  window.addEventListener("blur", handleGlobalMouseUp);
+
+  // Ensure viewport can receive focus for keyboard events
+  if (viewport.value) {
+    viewport.value.setAttribute("tabindex", "0");
+    viewport.value.focus();
+  }
 
   // Setup drawing canvas
   if (drawingCanvas.value) {
@@ -512,22 +868,16 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener("mousemove", handleMouseMove);
   document.removeEventListener("mouseup", handleMouseUp);
+  document.removeEventListener("keydown", handleKeyDown);
+  document.removeEventListener("keyup", handleKeyUp);
+  window.removeEventListener("mouseup", handleGlobalMouseUp);
+  window.removeEventListener("blur", handleGlobalMouseUp);
 });
 
-// Watch for grid store changes and animate
-watch(
-  () => gridStore.scale,
-  (newScale, oldScale) => {
-    if (Math.abs(newScale - oldScale) > 0.01) {
-      // Animate scale change
-      motion.animate(
-        gridContainer.value,
-        { scale: [oldScale, newScale] },
-        { duration: 0.3, easing: "easeOut" }
-      );
-    }
-  }
-);
+// Watch for space key state changes
+watch(isSpacePressed, (newValue) => {
+  updateCursor();
+});
 </script>
 
 <style scoped>
@@ -536,48 +886,155 @@ watch(
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #000000;
 }
 
-.layer-controls {
+.pan-mode-indicator {
   position: fixed;
-  top: 20px;
-  left: 20px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  animation: fadeInScale 0.2s ease-out;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.control-center {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
   z-index: 1000;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 30px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  width: 56px;
+  height: 56px;
+  transform: translateX(-50%);
+  overflow: hidden;
+}
+
+.control-center.expanded {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.control-toggle {
+  min-width: 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+  color: white !important;
+  flex-shrink: 0;
+}
+
+.control-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-left: 16px;
+  flex: 1;
+  opacity: 0;
+  transform: scale(0.8);
   transition: all 0.3s ease;
 }
 
-.layer-controls.visible .layer-buttons {
-  transform: translateX(0);
+.control-center.expanded .control-content {
   opacity: 1;
+  transform: scale(1);
 }
 
-.layer-toggle-btn {
-  margin-bottom: 10px;
-}
-
-.layer-buttons {
+.control-section {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
-  transform: translateX(-10px);
-  opacity: 0.7;
-  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
-.layer-buttons .p-button {
-  width: 40px;
-  height: 40px;
+.section-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
+
+.zoom-controls,
+.view-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zoom-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 8px 12px;
+}
+
+.zoom-level {
+  color: white;
+  font-weight: 600;
+  font-size: 0.8rem;
+  min-width: 38px;
+  text-align: center;
+}
+
+.control-section .p-button {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.2s ease;
+}
+
+.control-section .p-button:hover {
+  color: white !important;
+  transform: scale(1.1);
+}
+
+.control-section .p-button.p-button-info {
+  color: #2196f3 !important;
+}
+
+/* Control Center Toggle */
 
 .grid-viewport {
   width: 100%;
-  height: 100%;
+  height: 100%; /* Full height since top bar is now in CarjanEditor */
   overflow: hidden;
-  cursor: grab;
   display: flex;
   justify-content: center;
   align-items: center;
+  outline: none;
 }
 
 .grid-room {
@@ -585,7 +1042,7 @@ watch(
   justify-content: center;
   align-items: center;
   position: relative;
-  transform-origin: center;
+  transform-origin: center center;
 }
 
 .grid-main {
@@ -651,11 +1108,6 @@ watch(
   font-weight: 600;
   color: white;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.axis-label {
-  font-size: 0.75rem !important;
-  color: white !important;
 }
 
 .path-overlay {
@@ -786,6 +1238,158 @@ watch(
   margin-top: 16px;
   font-weight: 600;
   color: #333;
+}
+
+/* Top Bar Styles */
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1001;
+  background: rgba(26, 32, 44, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 50px;
+}
+
+.top-bar-left,
+.top-bar-center,
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.top-bar-center {
+  flex: 1;
+  justify-content: center;
+  gap: 20px;
+}
+
+.scenario-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+}
+
+.scenario-info i {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.no-scenario {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.layer-dropdown {
+  position: relative;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Layer Toggle Container */
+.layer-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  padding: 4px;
+  transition: all 0.3s ease;
+}
+
+.layer-main-toggle {
+  transition: all 0.3s ease;
+}
+
+.layer-main-toggle.layer-expanded {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.layer-toggles {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.layer-toggles.expanded {
+  max-width: 250px;
+  opacity: 1;
+}
+
+.layer-toggles .p-button {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  flex-shrink: 0;
+}
+
+.section-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mode-buttons,
+.zoom-controls,
+.view-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mode-buttons .p-button.mode-active {
+  background: rgba(33, 150, 243, 0.3) !important;
+  color: #2196f3 !important;
+  box-shadow: 0 0 20px rgba(33, 150, 243, 0.3);
+}
+
+.zoom-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 8px 12px;
+}
+
+.zoom-level {
+  color: white;
+  font-weight: 600;
+  font-size: 0.8rem;
+  min-width: 38px;
+  text-align: center;
+}
+
+.control-section .p-button {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.2s ease;
+}
+
+.control-section .p-button:hover {
+  color: white !important;
+  transform: scale(1.1);
+}
+
+.control-section .p-button.p-button-info {
+  color: #2196f3 !important;
 }
 
 /* Animations */

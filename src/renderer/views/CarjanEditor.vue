@@ -37,60 +37,111 @@
       <SplitterPanel :size="50" :min-size="30">
         <div class="middle-panel">
           <div class="grid-header">
+            <!-- Left: Scenario Info -->
             <div class="grid-title">
-              <i class="pi pi-th-large"></i>
-              <span>Grid Editor</span>
+              <i class="pi pi-file-edit"></i>
               <Badge
                 v-if="gridStore.scenarioName"
                 :value="gridStore.scenarioName"
+                severity="info"
               />
+              <span v-else class="no-scenario">No Scenario</span>
             </div>
 
-            <div class="grid-controls">
-              <!-- Path Mode Toggle -->
-              <Button
-                :label="gridStore.pathMode ? 'Exit Path Mode' : 'Path Mode'"
-                :icon="gridStore.pathMode ? 'pi pi-times' : 'pi pi-share-alt'"
-                :severity="gridStore.pathMode ? 'danger' : 'info'"
-                @click="togglePathMode"
-                size="small"
-              />
+            <!-- Center: Layer Controls -->
+            <div class="layer-controls-center">
+              <div class="layer-toggle-container">
+                <Button
+                  icon="pi pi-eye"
+                  class="layer-main-toggle"
+                  @click="toggleLayerView"
+                  size="small"
+                  :class="{ 'layer-expanded': layerViewExpanded }"
+                  rounded
+                />
 
-              <!-- Decision Box Mode -->
-              <Button
-                label="DBox Mode"
-                icon="pi pi-inbox"
-                :severity="
-                  gridStore.canvasMode === 'dbox' ? 'warning' : 'secondary'
-                "
-                @click="toggleDBoxMode"
-                size="small"
-              />
-
-              <!-- Reset View -->
-              <Button
-                icon="pi pi-refresh"
-                @click="resetGridView"
-                v-tooltip="'Reset View'"
-                text
-              />
-
-              <!-- Zoom Controls -->
-              <div class="zoom-controls">
-                <Button icon="pi pi-minus" @click="zoomOut" size="small" text />
-                <span class="zoom-level"
-                  >{{ Math.round(gridStore.scale * 100) }}%</span
+                <div
+                  class="layer-toggles"
+                  :class="{ expanded: layerViewExpanded }"
                 >
-                <Button icon="pi pi-plus" @click="zoomIn" size="small" text />
+                  <Button
+                    icon="pi pi-th-large"
+                    :class="{ 'p-button-success': gridStore.showGrid }"
+                    @click="gridStore.toggleGrid()"
+                    size="small"
+                    rounded
+                    v-tooltip="'Toggle Grid'"
+                  />
+                  <Button
+                    icon="pi pi-users"
+                    :class="{ 'p-button-success': gridStore.showEntities }"
+                    @click="gridStore.toggleEntities()"
+                    size="small"
+                    rounded
+                    v-tooltip="'Toggle Entities'"
+                  />
+                  <Button
+                    icon="pi pi-share-alt"
+                    :class="{ 'p-button-success': gridStore.showPaths }"
+                    @click="gridStore.togglePaths()"
+                    size="small"
+                    rounded
+                    v-tooltip="'Toggle Paths'"
+                  />
+                  <Button
+                    icon="pi pi-map-marker"
+                    :class="{ 'p-button-success': gridStore.showWaypoints }"
+                    @click="gridStore.toggleWaypoints()"
+                    size="small"
+                    rounded
+                    v-tooltip="'Toggle Waypoints'"
+                  />
+                  <Button
+                    icon="pi pi-inbox"
+                    :class="{ 'p-button-success': gridStore.showDBoxes }"
+                    @click="gridStore.toggleDBoxes()"
+                    size="small"
+                    rounded
+                    v-tooltip="'Toggle Decision Boxes'"
+                  />
+                </div>
+              </div>
+
+              <!-- Status Info -->
+              <div class="status-info">
+                <Badge
+                  :value="`${Math.round(gridStore.scale * 100)}%`"
+                  severity="info"
+                />
+                <Badge
+                  v-if="hoveredCell"
+                  :value="`X: ${hoveredCell.x}, Y: ${hoveredCell.y}`"
+                  severity="secondary"
+                />
+                <Badge v-else value="X: -, Y: -" severity="secondary" />
               </div>
             </div>
-          </div>
 
+            <!-- Right: Exit Button -->
+            <div class="grid-controls">
+              <Button
+                icon="pi pi-times"
+                label="Exit"
+                severity="danger"
+                @click="handleQuitEditor"
+                size="small"
+              />
+            </div>
+          </div>
           <!-- Grid Component -->
           <CarjanGrid
             @cell-selected="handleCellSelected"
             @entity-selected="handleEntitySelected"
             @path-selected="handlePathSelected"
+            @cell-hovered="handleCellHovered"
+            @toggle-path-mode="togglePathMode"
+            @toggle-dbox-mode="toggleDBoxMode"
+            @quit-editor="handleQuitEditor"
           />
         </div>
       </SplitterPanel>
@@ -119,8 +170,19 @@
           <span>{{ gridStore.category }}</span>
         </div>
       </div>
-
       <div class="status-right">
+        <div class="status-item">
+          <i class="pi pi-search-plus"></i>
+          <span>{{ Math.round(gridStore.scale * 100) }}%</span>
+        </div>
+        <div v-if="hoveredCell" class="status-item">
+          <i class="pi pi-crosshairs"></i>
+          <span>Row: {{ hoveredCell.y }}, Col: {{ hoveredCell.x }},</span>
+        </div>
+        <div v-else class="status-item">
+          <i class="pi pi-crosshairs"></i>
+          <span>Row: -, Col : -</span>
+        </div>
         <div class="status-item">
           <i class="pi pi-users"></i>
           <span>{{ gridStore.entities.length }} entities</span>
@@ -132,16 +194,6 @@
         <div class="status-item">
           <i class="pi pi-share-alt"></i>
           <span>{{ gridStore.paths.length }} paths</span>
-        </div>
-        <div
-          v-if="gridStore.currentCellPosition.length === 2"
-          class="status-item"
-        >
-          <i class="pi pi-crosshairs"></i>
-          <span
-            >{{ gridStore.currentCellPosition[0] }},
-            {{ gridStore.currentCellPosition[1] }}</span
-          >
         </div>
       </div>
     </div>
@@ -205,6 +257,8 @@ const confirm = useConfirm();
 // State
 const loading = ref(true);
 const loadingMessage = ref("Initializing editor...");
+const hoveredCell = ref(null);
+const layerViewExpanded = ref(false);
 
 // Helper method to load sample scenario data
 const loadSampleScenarioData = () => {
@@ -289,6 +343,10 @@ onMounted(async () => {
 });
 
 // Methods
+const toggleLayerView = () => {
+  layerViewExpanded.value = !layerViewExpanded.value;
+};
+
 const togglePathMode = () => {
   if (gridStore.pathMode) {
     gridStore.endPathMode();
@@ -340,19 +398,25 @@ const resetGridView = () => {
   });
 };
 
-const zoomIn = () => {
-  gridStore.setScale(gridStore.scale + 0.1);
-};
-
-const zoomOut = () => {
-  gridStore.setScale(gridStore.scale - 0.1);
-};
-
 const closeProperties = () => {
   gridStore.propertyPanel = "scenario";
   gridStore.selectedEntity = null;
   gridStore.selectedPath = null;
   gridStore.selectedDBox = null;
+};
+
+const handleQuitEditor = () => {
+  confirm.require({
+    message:
+      "Are you sure you want to quit the editor? Any unsaved changes will be lost.",
+    header: "Quit Editor",
+    icon: "pi pi-question-circle",
+    acceptClass: "p-button-danger",
+    accept: () => {
+      // Navigate back or close editor
+      window.history.back();
+    },
+  });
 };
 
 // Event Handlers
@@ -414,6 +478,10 @@ const handleEntitySelected = (entity) => {
 
 const handlePathSelected = (path) => {
   gridStore.selectPath(path);
+};
+
+const handleCellHovered = (cellCoords) => {
+  hoveredCell.value = cellCoords;
 };
 
 const handleExportScenario = () => {
@@ -491,7 +559,7 @@ watch(
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0a0a0f 0%, #141419 50%, #0f0f14 100%);
   color: white;
 }
 
@@ -519,6 +587,11 @@ watch(
   height: 100%;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
+}
+
+.middle-panel {
+  display: flex;
+  flex-direction: column;
 }
 
 .panel-tabs {
@@ -558,9 +631,12 @@ watch(
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(26, 32, 44, 0.98);
+  backdrop-filter: blur(20px);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  min-height: 60px;
+  z-index: 100;
+  position: relative;
 }
 
 .grid-title {
@@ -569,6 +645,11 @@ watch(
   gap: 0.5rem;
   font-weight: 600;
   font-size: 1.1rem;
+  color: white;
+}
+
+.grid-title i {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .grid-controls {
@@ -661,6 +742,85 @@ watch(
 .carjan-editor * {
   transition: background-color 0.3s ease, border-color 0.3s ease,
     color 0.3s ease;
+}
+
+/* Layer Controls Styling */
+.layer-controls-center {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+  justify-content: center;
+}
+
+.layer-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 25px;
+  padding: 4px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.layer-main-toggle {
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.layer-main-toggle.layer-expanded {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.layer-toggles {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.layer-toggles.expanded {
+  max-width: 250px;
+  opacity: 1;
+}
+
+.layer-toggles .p-button {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.layer-toggles .p-button:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.layer-toggles .p-button.p-button-success {
+  background: rgba(76, 175, 80, 0.3) !important;
+  border-color: rgba(76, 175, 80, 0.5) !important;
+  color: #4caf50 !important;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.no-scenario {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  font-style: italic;
 }
 
 /* Responsive design */

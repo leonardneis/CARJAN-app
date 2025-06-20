@@ -23,6 +23,7 @@ Thumbs.db
 *.code-workspace
 carjan-old/
 md-logs/
+reference/
 
 # OS/Exec
 *.exe
