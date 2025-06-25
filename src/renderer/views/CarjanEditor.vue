@@ -3,7 +3,7 @@
     <!-- Split Layout Container -->
     <Splitter class="editor-splitter" :layout="'horizontal'">
       <!-- Left Panel - Tools and Files -->
-      <SplitterPanel :size="25" :min-size="20">
+      <SplitterPanel :size="25" :min-size="20" :max-size="35">
         <div class="left-panel">
           <!-- Tab Navigation -->
           <TabView class="panel-tabs">
@@ -40,111 +40,54 @@
             <!-- Left: Scenario Info -->
             <div class="grid-title">
               <i class="pi pi-file-edit"></i>
-              <Badge
-                v-if="gridStore.scenarioName"
-                :value="gridStore.scenarioName"
-                severity="info"
-              />
-              <span v-else class="no-scenario">No Scenario</span>
+              <div class="scenario-badge">
+                <span v-if="gridStore.scenarioName">{{
+                  gridStore.scenarioName
+                }}</span>
+                <span v-else class="no-scenario">No Scenario</span>
+              </div>
             </div>
-
-            <!-- Center: Layer Controls -->
+            <!-- Center: Multistate Mode Button -->
             <div class="layer-controls-center">
-              <div class="layer-toggle-container">
-                <Button
-                  icon="pi pi-eye"
-                  class="layer-main-toggle"
-                  @click="toggleLayerView"
-                  size="small"
-                  :class="{ 'layer-expanded': layerViewExpanded }"
-                  rounded
-                />
-
-                <div
-                  class="layer-toggles"
-                  :class="{ expanded: layerViewExpanded }"
+              <button
+                class="multistate-mode-btn"
+                @click="cycleToNextMode"
+                :class="{
+                  'edit-mode': getCurrentMode() === 'Edit Mode',
+                  'path-mode': getCurrentMode() === 'Path Mode',
+                  'dbox-mode': getCurrentMode() === 'DBox Mode',
+                }"
+              >
+                <motion.div
+                  class="mode-content"
+                  :animate="{
+                    scale: [1, 1.05, 1],
+                  }"
+                  :transition="{ duration: 0.3 }"
+                  :key="getCurrentMode()"
                 >
-                  <Button
-                    icon="pi pi-th-large"
-                    :class="{ 'p-button-success': gridStore.showGrid }"
-                    @click="gridStore.toggleGrid()"
-                    size="small"
-                    rounded
-                    v-tooltip="'Toggle Grid'"
-                  />
-                  <Button
-                    icon="pi pi-users"
-                    :class="{ 'p-button-success': gridStore.showEntities }"
-                    @click="gridStore.toggleEntities()"
-                    size="small"
-                    rounded
-                    v-tooltip="'Toggle Entities'"
-                  />
-                  <Button
-                    icon="pi pi-share-alt"
-                    :class="{ 'p-button-success': gridStore.showPaths }"
-                    @click="gridStore.togglePaths()"
-                    size="small"
-                    rounded
-                    v-tooltip="'Toggle Paths'"
-                  />
-                  <Button
-                    icon="pi pi-map-marker"
-                    :class="{ 'p-button-success': gridStore.showWaypoints }"
-                    @click="gridStore.toggleWaypoints()"
-                    size="small"
-                    rounded
-                    v-tooltip="'Toggle Waypoints'"
-                  />
-                  <Button
-                    icon="pi pi-inbox"
-                    :class="{ 'p-button-success': gridStore.showDBoxes }"
-                    @click="gridStore.toggleDBoxes()"
-                    size="small"
-                    rounded
-                    v-tooltip="'Toggle Decision Boxes'"
-                  />
-                </div>
-              </div>
-
-              <!-- Status Info -->
-              <div class="status-info">
-                <Badge
-                  :value="`${Math.round(gridStore.scale * 100)}%`"
-                  severity="info"
-                />
-                <Badge
-                  v-if="hoveredCell"
-                  :value="`X: ${hoveredCell.x}, Y: ${hoveredCell.y}`"
-                  severity="secondary"
-                />
-                <Badge v-else value="X: -, Y: -" severity="secondary" />
-              </div>
+                  <i :class="getCurrentModeIcon()"></i>
+                  <span>{{ getCurrentModeLabel() }}</span>
+                </motion.div>
+              </button>
             </div>
-            <!-- Right: Mode Controls, Zoom Controls & Exit Button -->
+            <!-- Right: Zoom Controls & Exit Button -->
             <div class="grid-controls">
-              <!-- Mode Controls -->
-              <div class="mode-controls">
-                <!-- Path Mode Toggle -->
-                <Button
-                  :label="gridStore.pathMode ? 'Exit Path Mode' : 'Path Mode'"
-                  :icon="gridStore.pathMode ? 'pi pi-times' : 'pi pi-share-alt'"
-                  :severity="gridStore.pathMode ? 'danger' : 'info'"
-                  @click="togglePathMode"
-                  size="small"
-                />
-
-                <!-- Decision Box Mode -->
-                <Button
-                  label="DBox Mode"
-                  icon="pi pi-inbox"
-                  :severity="
-                    gridStore.canvasMode === 'dbox' ? 'warning' : 'secondary'
-                  "
-                  @click="toggleDBoxMode"
-                  size="small"
-                />
-              </div>
+              <!-- Done Button for Path/DBox Mode -->
+              <Button
+                v-if="gridStore.pathMode || gridStore.canvasMode === 'dbox'"
+                icon="pi pi-check"
+                severity="success"
+                @click="finishCurrentMode"
+                size="small"
+                v-tooltip.bottom="{
+                  value: gridStore.pathMode ? 'Finish Path' : 'Finish DBox',
+                  showDelay: 300,
+                }"
+                rounded
+                text
+                class="finish-mode-btn"
+              />
 
               <!-- Zoom Controls -->
               <div class="zoom-controls">
@@ -172,6 +115,7 @@
               />
             </div>
           </div>
+
           <!-- Grid Component -->
           <CarjanGrid
             @cell-selected="handleCellSelected"
@@ -184,15 +128,13 @@
           />
         </div>
       </SplitterPanel>
-
       <!-- Right Panel - Properties -->
-      <SplitterPanel :size="25" :min-size="20">
+      <SplitterPanel :size="25" :min-size="20" :max-size="35">
         <div class="right-panel">
           <CarjanProperties @close="closeProperties" />
         </div>
       </SplitterPanel>
     </Splitter>
-
     <!-- Status Bar -->
     <div class="status-bar">
       <div class="status-left">
@@ -207,6 +149,10 @@
         <div class="status-item">
           <i class="pi pi-building"></i>
           <span>{{ gridStore.category }}</span>
+        </div>
+        <div class="status-item">
+          <i class="pi pi-cog"></i>
+          <span>{{ getCurrentMode() }}</span>
         </div>
       </div>
       <div class="status-right">
@@ -297,7 +243,13 @@ const confirm = useConfirm();
 const loading = ref(true);
 const loadingMessage = ref("Initializing editor...");
 const hoveredCell = ref(null);
-const layerViewExpanded = ref(false);
+
+// Available modes for the switcher
+const availableModes = [
+  { key: "edit", label: "Edit Mode", icon: "pi pi-pencil" },
+  { key: "path", label: "Path Mode", icon: "pi pi-share-alt" },
+  { key: "dbox", label: "DBox Mode", icon: "pi pi-inbox" },
+];
 
 // Helper method to load sample scenario data
 const loadSampleScenarioData = () => {
@@ -382,10 +334,6 @@ onMounted(async () => {
 });
 
 // Methods
-const toggleLayerView = () => {
-  layerViewExpanded.value = !layerViewExpanded.value;
-};
-
 // Mode Management (like in CarjanEditor_old.vue)
 const togglePathMode = () => {
   if (gridStore.pathMode) {
@@ -556,6 +504,134 @@ const handleExportScenario = () => {
   });
 };
 
+// Get current mode for status bar
+const getCurrentMode = () => {
+  if (gridStore.pathMode) {
+    return "Path Mode";
+  } else if (gridStore.canvasMode === "dbox") {
+    return "DBox Mode";
+  } else {
+    return "Edit Mode";
+  }
+};
+
+// Get current mode label for the switcher
+const getCurrentModeLabel = () => {
+  const mode = availableModes.find((m) => {
+    if (m.key === "path") return gridStore.pathMode;
+    if (m.key === "dbox") return gridStore.canvasMode === "dbox";
+    return !gridStore.pathMode && gridStore.canvasMode !== "dbox";
+  });
+  return mode?.label || "Edit Mode";
+};
+
+// Get current mode icon for the switcher
+const getCurrentModeIcon = () => {
+  const mode = availableModes.find((m) => {
+    if (m.key === "path") return gridStore.pathMode;
+    if (m.key === "dbox") return gridStore.canvasMode === "dbox";
+    return !gridStore.pathMode && gridStore.canvasMode !== "dbox";
+  });
+  return mode?.icon || "pi pi-pencil";
+};
+
+// Toggle mode switcher expansion
+const toggleModeSwitcher = () => {
+  modeSwitcherExpanded.value = !modeSwitcherExpanded.value;
+};
+
+// Cycle to next mode (Multistate button behavior)
+const cycleToNextMode = () => {
+  const currentMode = getCurrentMode();
+  const currentIndex = availableModes.findIndex((m) => m.label === currentMode);
+  const nextIndex = (currentIndex + 1) % availableModes.length;
+  const nextMode = availableModes[nextIndex];
+
+  selectMode(nextMode.key);
+};
+
+// Select a mode from the stack
+const selectMode = (modeKey) => {
+  switch (modeKey) {
+    case "edit":
+      setEditMode();
+      break;
+    case "path":
+      setPathMode();
+      break;
+    case "dbox":
+      setDBoxMode();
+      break;
+  }
+};
+
+// Finish current mode (Path or DBox)
+const finishCurrentMode = () => {
+  if (gridStore.pathMode) {
+    gridStore.endPathMode();
+    toast.add({
+      severity: "success",
+      summary: "Path Complete",
+      detail: "Path has been completed",
+      life: 2000,
+    });
+  } else if (gridStore.canvasMode === "dbox") {
+    gridStore.canvasMode = "default";
+    toast.add({
+      severity: "success",
+      summary: "DBox Complete",
+      detail: "Decision box creation completed",
+      life: 2000,
+    });
+  }
+};
+
+// Get current mode index for the switcher animation (kept for compatibility)
+const getCurrentModeIndex = () => {
+  if (gridStore.pathMode) {
+    return 1; // Path mode
+  } else if (gridStore.canvasMode === "dbox") {
+    return 2; // DBox mode
+  } else {
+    return 0; // Edit mode
+  }
+};
+
+// Set edit mode (disable other modes)
+const setEditMode = () => {
+  gridStore.pathMode = false;
+  gridStore.canvasMode = "default";
+  toast.add({
+    severity: "info",
+    summary: "Edit Mode",
+    detail: "Edit mode activated",
+    life: 2000,
+  });
+};
+
+// Set path mode (disable other modes)
+const setPathMode = () => {
+  gridStore.startPathMode();
+  toast.add({
+    severity: "info",
+    summary: "Path Mode",
+    detail: "Click on cells to create a path. Click 'Finish Path' when done.",
+    life: 4000,
+  });
+};
+
+// Set DBox mode (disable other modes)
+const setDBoxMode = () => {
+  gridStore.pathMode = false;
+  gridStore.canvasMode = "dbox";
+  toast.add({
+    severity: "info",
+    summary: "DBox Mode",
+    detail: "Drag to create decision boxes on the grid",
+    life: 3000,
+  });
+};
+
 // Watch for keyboard shortcuts
 watch(
   () => {},
@@ -620,6 +696,7 @@ watch(
 
 .editor-splitter {
   flex: 1;
+  height: calc(100vh - 40px); /* Subtract status bar height */
 }
 
 :deep(.p-splitter) {
@@ -642,6 +719,12 @@ watch(
   height: 100%;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
+  overflow: auto; /* Add scrolling if content gets too large */
+}
+
+.left-panel,
+.right-panel {
+  max-width: 500px; /* Prevent panels from becoming too wide */
 }
 
 .middle-panel {
@@ -682,8 +765,8 @@ watch(
 }
 
 .grid-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
   padding: 1rem;
   background: rgba(26, 32, 44, 0.98);
@@ -692,36 +775,52 @@ watch(
   min-height: 60px;
   z-index: 100;
   position: relative;
+  gap: 1rem;
 }
 
 .grid-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 12px;
   font-weight: 600;
   font-size: 1.1rem;
   color: white;
+  justify-self: start;
+  min-width: 0; /* Prevent overflow */
 }
 
-.grid-title i {
-  color: rgba(255, 255, 255, 0.7);
+.layer-controls-center {
+  justify-self: center;
+  min-width: 0; /* Prevent overflow */
 }
 
-/* Grid Controls Styling */
 .grid-controls {
   display: flex;
   align-items: center;
   gap: 16px;
+  justify-self: end;
+  min-width: 0; /* Prevent overflow */
 }
 
-.mode-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.grid-title i {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1rem;
+}
+
+.scenario-badge {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  padding: 4px;
+  padding: 6px 16px;
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: white;
+}
+
+.no-scenario {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
 }
 
 .zoom-controls {
@@ -743,14 +842,21 @@ watch(
 }
 
 .status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 1rem;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  background: rgba(26, 32, 44, 0.95);
+  backdrop-filter: blur(20px);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 0.875rem;
+  height: 40px;
+  box-sizing: border-box;
 }
 
 .status-left,
@@ -821,62 +927,88 @@ watch(
   justify-content: center;
 }
 
-.layer-toggle-container {
+/* Multistate Mode Button */
+.layer-controls-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.multistate-mode-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  min-width: 140px;
+  overflow: hidden;
+  position: relative;
+}
+
+.multistate-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+}
+
+.multistate-mode-btn:active {
+  transform: scale(0.98);
+}
+
+.mode-content {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 25px;
-  padding: 4px;
-  transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.layer-main-toggle {
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
+.mode-content i {
+  font-size: 1rem;
 }
 
-.layer-main-toggle.layer-expanded {
-  background: rgba(255, 255, 255, 0.2) !important;
+/* Mode State Colors */
+.multistate-mode-btn.edit-mode {
+  border-color: rgba(108, 92, 231, 0.6);
+  box-shadow: 0 0 20px rgba(108, 92, 231, 0.2);
+  background: rgba(108, 92, 231, 0.1);
 }
 
-.layer-toggles {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow: hidden;
-  max-width: 0;
-  opacity: 0;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+.multistate-mode-btn.edit-mode:hover {
+  border-color: rgba(108, 92, 231, 0.8);
+  box-shadow: 0 0 25px rgba(108, 92, 231, 0.3);
+  background: rgba(108, 92, 231, 0.15);
 }
 
-.layer-toggles.expanded {
-  max-width: 250px;
-  opacity: 1;
+.multistate-mode-btn.path-mode {
+  border-color: rgba(0, 206, 201, 0.6);
+  box-shadow: 0 0 20px rgba(0, 206, 201, 0.2);
+  background: rgba(0, 206, 201, 0.1);
 }
 
-.layer-toggles .p-button {
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
+.multistate-mode-btn.path-mode:hover {
+  border-color: rgba(0, 206, 201, 0.8);
+  box-shadow: 0 0 25px rgba(0, 206, 201, 0.3);
+  background: rgba(0, 206, 201, 0.15);
 }
 
-.layer-toggles .p-button:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
-  color: white !important;
+.multistate-mode-btn.dbox-mode {
+  border-color: rgba(253, 121, 168, 0.6);
+  box-shadow: 0 0 20px rgba(253, 121, 168, 0.2);
+  background: rgba(253, 121, 168, 0.1);
 }
 
-.layer-toggles .p-button.p-button-success {
-  background: rgba(76, 175, 80, 0.3) !important;
-  border-color: rgba(76, 175, 80, 0.5) !important;
-  color: #4caf50 !important;
+.multistate-mode-btn.dbox-mode:hover {
+  border-color: rgba(253, 121, 168, 0.8);
+  box-shadow: 0 0 25px rgba(253, 121, 168, 0.3);
+  background: rgba(253, 121, 168, 0.15);
 }
 
 .status-info {
@@ -885,27 +1017,11 @@ watch(
   gap: 8px;
 }
 
-.no-scenario {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.9rem;
-  font-style: italic;
-}
-
 /* Responsive design */
 @media (max-width: 1200px) {
   .grid-header {
     flex-wrap: wrap;
     gap: 0.5rem;
-  }
-
-  .mode-controls {
-    order: 1;
-    flex: 1;
-    justify-content: center;
-  }
-
-  .zoom-controls {
-    order: 2;
   }
 
   .grid-controls {
@@ -931,10 +1047,30 @@ watch(
     gap: 0.5rem;
     align-items: stretch;
   }
-
   .status-left,
   .status-right {
     justify-content: center;
   }
+}
+
+/* Finish Mode Button */
+.finish-mode-btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  border-radius: 50% !important;
+  background: rgba(76, 175, 80, 0.2) !important;
+  border: 2px solid rgba(76, 175, 80, 0.4) !important;
+  color: #4caf50 !important;
+}
+
+.finish-mode-btn:hover {
+  background: rgba(76, 175, 80, 0.3) !important;
+  border-color: rgba(76, 175, 80, 0.6) !important;
+  transform: scale(1.1) !important;
+}
+
+.finish-mode-btn i {
+  font-size: 14px !important;
 }
 </style>

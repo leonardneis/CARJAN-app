@@ -76,7 +76,6 @@
                 />
               </div>
             </div>
-
             <!-- Display Options -->
             <Divider />
             <div class="display-options">
@@ -108,6 +107,50 @@
                     on-icon="pi pi-map-marker"
                     off-icon="pi pi-eye-slash"
                   />
+                </div>
+              </div>
+            </div>
+
+            <!-- Statistics -->
+            <Divider />
+            <div class="statistics-section">
+              <h4>Statistics</h4>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <i class="pi pi-user"></i>
+                  <div class="stat-info">
+                    <span class="stat-value">{{
+                      getEntityCount("pedestrian")
+                    }}</span>
+                    <span class="stat-label">Pedestrians</span>
+                  </div>
+                </div>
+                <div class="stat-item">
+                  <i class="pi pi-car"></i>
+                  <div class="stat-info">
+                    <span class="stat-value">{{
+                      getEntityCount("vehicle")
+                    }}</span>
+                    <span class="stat-label">Vehicles</span>
+                  </div>
+                </div>
+                <div class="stat-item">
+                  <i class="pi pi-cog"></i>
+                  <div class="stat-info">
+                    <span class="stat-value">{{
+                      getEntityCount("autonomous")
+                    }}</span>
+                    <span class="stat-label">Autonomous</span>
+                  </div>
+                </div>
+                <div class="stat-item">
+                  <i class="pi pi-stop"></i>
+                  <div class="stat-info">
+                    <span class="stat-value">{{
+                      getEntityCount("obstacle")
+                    }}</span>
+                    <span class="stat-label">Obstacles</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -664,6 +707,10 @@ const handleWaypointDrop = (positionId, event) => {
 const handleDragOver = (event) => {
   event.preventDefault();
 };
+
+const getEntityCount = (type) => {
+  return gridStore.entities.filter((e) => e.type === type).length;
+};
 </script>
 
 <style scoped>
@@ -757,6 +804,48 @@ const handleDragOver = (event) => {
 .display-options h4 {
   color: white;
   margin-bottom: 1rem;
+}
+
+.statistics-section h4 {
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.stat-item i {
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  color: white;
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
 }
 
 .cell-info {

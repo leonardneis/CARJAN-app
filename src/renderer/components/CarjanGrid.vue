@@ -130,30 +130,6 @@
               pointerEvents: gridStore.canvasMode === 'dbox' ? 'auto' : 'none',
             }"
           />
-          <!-- Coordinate System -->
-          <div class="coordinate-system">
-            <!-- Column Numbers (X-axis - horizontal) -->
-            <div class="column-numbers">
-              <div
-                v-for="col in gridStore.gridCols"
-                :key="`col-${col - 1}`"
-                class="col-number"
-              >
-                {{ col - 1 }}
-              </div>
-            </div>
-
-            <!-- Row Numbers (Y-axis - vertical) -->
-            <div class="row-numbers">
-              <div
-                v-for="row in gridStore.gridRows"
-                :key="`row-${row - 1}`"
-                class="row-number"
-              >
-                {{ row - 1 }}
-              </div>
-            </div>
-          </div>
 
           <!-- Path Overlay SVG -->
           <svg
@@ -245,11 +221,11 @@
       ref="controlCenterRef"
       class="control-center"
       :style="{
-        width: debouncedControlCenterExpanded ? '280px' : '56px',
+        width: debouncedControlCenterExpanded ? '320px' : '56px',
         height: debouncedControlCenterExpanded ? '76px' : '56px',
         borderRadius: debouncedControlCenterExpanded ? '38px' : '28px',
         left: debouncedControlCenterExpanded
-          ? 'calc(50% - 140px)'
+          ? 'calc(50% - 160px)'
           : 'calc(50% - 28px)',
       }"
       @mouseenter="handleControlCenterMouseEnter"
@@ -268,7 +244,7 @@
       >
         <Button
           ref="controlToggleRef"
-          icon="pi pi-cog"
+          icon="pi pi-eye"
           class="control-toggle"
           rounded
           text
@@ -286,15 +262,51 @@
           pointerEvents: immediateContentVisible ? 'auto' : 'none',
         }"
       >
-        <!-- Mode Display (Controls sind jetzt in der Top-Bar) -->
-        <div class="control-section">
-          <span class="section-label">Current Mode</span>
-          <div class="mode-display">
-            <span class="current-mode" :class="`mode-${getCurrentMode()}`">
-              <i :class="getCurrentModeIcon(getCurrentMode())"></i>
-              {{ getCurrentMode().toUpperCase() }}
-            </span>
-          </div>
+        <!-- Layer Controls -->
+        <div class="layer-controls">
+          <Button
+            icon="pi pi-th-large"
+            :class="{ 'p-button-success': gridStore.showGrid }"
+            @click="gridStore.toggleGrid()"
+            size="small"
+            rounded
+            v-tooltip.bottom="{ value: 'Toggle Grid', showDelay: 300 }"
+          />
+          <Button
+            icon="pi pi-users"
+            :class="{ 'p-button-success': gridStore.showEntities }"
+            @click="gridStore.toggleEntities()"
+            size="small"
+            rounded
+            v-tooltip.bottom="{ value: 'Toggle Entities', showDelay: 300 }"
+          />
+          <Button
+            icon="pi pi-share-alt"
+            :class="{ 'p-button-success': gridStore.showPaths }"
+            @click="gridStore.togglePaths()"
+            size="small"
+            rounded
+            v-tooltip.bottom="{ value: 'Toggle Paths', showDelay: 300 }"
+          />
+          <Button
+            icon="pi pi-map-marker"
+            :class="{ 'p-button-success': gridStore.showWaypoints }"
+            @click="gridStore.toggleWaypoints()"
+            size="small"
+            rounded
+            v-tooltip.bottom="{ value: 'Toggle Waypoints', showDelay: 300 }"
+          />
+          <Button
+            icon="pi pi-inbox"
+            :class="{ 'p-button-success': gridStore.showDBoxes }"
+            @click="gridStore.toggleDBoxes()"
+            size="small"
+            rounded
+            v-tooltip.bottom="{
+              value: 'Toggle Decision Boxes',
+              showDelay: 300,
+            }"
+          />
         </div>
       </motion.div>
     </motion.div>
@@ -925,7 +937,7 @@ watch(isSpacePressed, (newValue) => {
 
 .control-center {
   position: fixed;
-  bottom: 40px;
+  bottom: 60px; /* Add margin from bottom */
   z-index: 1500;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px) saturate(180%);
@@ -956,36 +968,21 @@ watch(isSpacePressed, (newValue) => {
 .control-content {
   display: flex;
   align-items: center;
-  gap: 24px;
+  justify-content: center;
   flex: 1;
   position: absolute;
   left: 50px;
   right: 12px;
   height: 100%;
+  padding: 0 8px;
+}
+
+.layer-controls {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-}
-
-.control-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.section-label {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.zoom-controls,
-.view-buttons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  width: 100%;
+  gap: 4px;
 }
 
 .zoom-section {
@@ -1058,50 +1055,6 @@ watch(isSpacePressed, (newValue) => {
   left: 0;
   z-index: 999;
   pointer-events: none;
-}
-
-.coordinate-system {
-  position: absolute;
-  top: -40px;
-  left: -40px;
-  right: -40px;
-  bottom: -40px;
-  pointer-events: none;
-}
-
-.column-numbers {
-  position: absolute;
-  top: -35px;
-  left: 20px;
-  display: flex;
-  gap: 1px;
-}
-
-.col-number {
-  width: 60px;
-  text-align: center;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.row-numbers {
-  position: absolute;
-  left: -35px;
-  top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.row-number {
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .path-overlay {
@@ -1343,10 +1296,39 @@ watch(isSpacePressed, (newValue) => {
 
 .mode-buttons,
 .mode-display,
+.layer-controls,
 .view-buttons {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.layer-controls .p-button {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.layer-controls .p-button i {
+  font-size: 14px !important;
+  margin: 0 !important;
+}
+
+.layer-controls .p-button:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.layer-controls .p-button.p-button-success {
+  background: rgba(76, 175, 80, 0.3) !important;
+  border-color: rgba(76, 175, 80, 0.5) !important;
+  color: #4caf50 !important;
 }
 
 .mode-display .current-mode {
