@@ -95,6 +95,7 @@
         />
       </div>
     </div>
+
     <!-- Pan Mode Indicator -->
     <div v-if="isSpacePressed" class="pan-mode-indicator">
       <i class="pi pi-arrows-alt"></i>
@@ -116,6 +117,7 @@
         <!-- Grid Container -->
         <div
           class="grid-main"
+          :class="{ 'grid-blurred': gridBlurred }"
           ref="gridContainer"
           @drop="handleDrop"
           @dragover="handleDragOver"
@@ -149,11 +151,72 @@
               class="path-line"
             />
           </svg>
-
-          <!-- Grid Cells -->
-          <div
+          <!-- Grid Cells - Animation Version -->
+          <motion.div
+            v-if="!rippleAnimationComplete"
             v-for="cell in gridStore.gridCells"
-            :key="`cell-${cell.row}-${cell.col}`"
+            :key="`motion-cell-${cell.row}-${cell.col}`"
+            class="grid-cell"
+            :class="getCellClasses(cell)"
+            :style="getCellStyle(cell)"
+            :data-row="cell.row"
+            :data-col="cell.col"
+            :initial="{ scale: 0, opacity: 0 }"
+            :animate="{
+              scale: [0, 1.1, 1],
+              opacity: [0, 0.8, 1],
+            }"
+            :transition="{
+              duration: 0.6,
+              delay: getCellAnimationDelay(cell),
+              ease: [0.23, 1, 0.32, 1],
+              times: [0, 0.6, 1],
+            }"
+            @click="handleCellClick(cell)"
+            @mouseenter="handleCellHover(cell, true)"
+            @mouseleave="handleCellHover(cell, false)"
+            @drop="handleCellDrop(cell, $event)"
+            @dragover="handleCellDragOver"
+          >
+            <!-- Waypoints in cell -->
+            <div
+              v-for="waypoint in getWaypointsInCell(cell)"
+              :key="waypoint.id"
+              class="waypoint-marker"
+              :class="{
+                'waypoint-highlighted': isWaypointHighlighted(waypoint),
+                'waypoint-path-start': isPathStart(waypoint),
+                'waypoint-path-end': isPathEnd(waypoint),
+              }"
+              :data-position="waypoint.positionInCell"
+              v-show="gridStore.showWaypoints"
+            >
+              <i class="pi pi-map-marker"></i>
+            </div>
+
+            <!-- Entity in cell -->
+            <div
+              v-if="getEntityInCell(cell) && gridStore.showEntities"
+              class="entity-marker"
+              :class="getEntityClasses(getEntityInCell(cell))"
+            >
+              <i :class="getEntityIcon(getEntityInCell(cell))"></i>
+              <!-- Entity direction chevron -->
+              <div
+                v-if="getEntityInCell(cell).heading"
+                class="entity-chevron"
+                :style="getChevronStyle(getEntityInCell(cell))"
+              >
+                <i class="pi pi-chevron-up"></i>
+              </div>
+            </div>
+          </motion.div>
+
+          <!-- Grid Cells - Performance Version (after animation) -->
+          <div
+            v-if="rippleAnimationComplete"
+            v-for="cell in gridStore.gridCells"
+            :key="`div-cell-${cell.row}-${cell.col}`"
             class="grid-cell"
             :class="getCellClasses(cell)"
             :style="getCellStyle(cell)"
@@ -217,29 +280,41 @@
     </div>
     <!-- Bottom Control Center -->
     <motion.div
-      layout
       ref="controlCenterRef"
       class="control-center"
       :style="{
-        width: debouncedControlCenterExpanded ? '320px' : '56px',
-        height: debouncedControlCenterExpanded ? '76px' : '56px',
-        borderRadius: debouncedControlCenterExpanded ? '38px' : '28px',
+        width: debouncedControlCenterExpanded ? '300px' : '56px',
+        height: debouncedControlCenterExpanded ? '84px' : '56px',
+        borderRadius: debouncedControlCenterExpanded ? '42px' : '28px',
         left: debouncedControlCenterExpanded
-          ? 'calc(50% - 160px)'
+          ? 'calc(50% - 150px)'
           : 'calc(50% - 28px)',
       }"
+      :animate="{
+        width: debouncedControlCenterExpanded ? '300px' : '56px',
+        height: debouncedControlCenterExpanded ? '84px' : '56px',
+        borderRadius: debouncedControlCenterExpanded ? '42px' : '28px',
+        left: debouncedControlCenterExpanded
+          ? 'calc(50% - 150px)'
+          : 'calc(50% - 28px)',
+      }"
+      :transition="{ duration: 0.3, ease: 'easeInOut' }"
       @mouseenter="handleControlCenterMouseEnter"
       @mouseleave="handleControlCenterMouseLeave"
     >
       <!-- Control Center Toggle Button -->
       <motion.div
-        layout
         :style="{
           opacity: debouncedControlCenterToggleHidden ? 0 : 1,
           transform: debouncedControlCenterToggleHidden
             ? 'scale(0.8)'
             : 'scale(1)',
         }"
+        :animate="{
+          opacity: debouncedControlCenterToggleHidden ? 0 : 1,
+          scale: debouncedControlCenterToggleHidden ? 0.8 : 1,
+        }"
+        :transition="{ duration: 0.3 }"
         style="position: absolute; z-index: 2"
       >
         <Button
@@ -253,7 +328,6 @@
       </motion.div>
       <!-- Control Center Content -->
       <motion.div
-        layout
         ref="controlContentRef"
         class="control-content"
         :style="{
@@ -261,6 +335,11 @@
           transform: immediateContentVisible ? 'scale(1)' : 'scale(0.8)',
           pointerEvents: immediateContentVisible ? 'auto' : 'none',
         }"
+        :animate="{
+          opacity: immediateContentVisible ? 1 : 0,
+          scale: immediateContentVisible ? 1 : 0.8,
+        }"
+        :transition="{ duration: 0.3 }"
       >
         <!-- Layer Controls -->
         <div class="layer-controls">
@@ -887,6 +966,46 @@ onUnmounted(() => {
   }
 });
 
+// Random animation center for staggered grid effect
+const animationCenter = ref({ row: 0, col: 0 });
+const gridBlurred = ref(true); // Start with blur, remove after animation
+const rippleAnimationComplete = ref(false); // Track animation completion
+
+// Initialize random animation center on component mount
+onMounted(() => {
+  // Generate random center within grid bounds (assuming 12 rows, 8 cols)
+  animationCenter.value = {
+    row: Math.floor(Math.random() * 12),
+    col: Math.floor(Math.random() * 8),
+  };
+
+  // Remove blur after animation completes
+  const maxDistance = 11 + 7; // max possible distance
+  const maxDelay = maxDistance * 0.05;
+  const animationDuration = 0.6;
+  const totalTime = maxDelay + animationDuration;
+  const switchTime = totalTime - 0.5; // Switch divs 0.5s earlier
+
+  setTimeout(() => {
+    gridBlurred.value = false;
+    rippleAnimationComplete.value = true;
+
+    // Emit event to trigger panel fade-in
+    window.dispatchEvent(new CustomEvent("ripple-animation-complete"));
+  }, switchTime * 1000);
+});
+
+// Animation delay calculation for staggered grid effect
+const getCellAnimationDelay = (cell) => {
+  // Calculate distance from random center using Manhattan distance for ripple effect
+  const distance =
+    Math.abs(cell.row - animationCenter.value.row) +
+    Math.abs(cell.col - animationCenter.value.col);
+
+  // Base delay + distance-based staggering (50ms per distance unit)
+  return distance * 0.05; // 50ms converted to seconds
+};
+
 // Watch for space key state changes
 watch(isSpacePressed, (newValue) => {
   updateCursor();
@@ -903,10 +1022,10 @@ watch(isSpacePressed, (newValue) => {
 }
 
 .pan-mode-indicator {
-  position: fixed;
-  top: 50%;
+  position: absolute;
+  top: 20px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   z-index: 2000;
   background: rgba(0, 0, 0, 0.8);
   color: white;
@@ -927,11 +1046,11 @@ watch(isSpacePressed, (newValue) => {
 @keyframes fadeInScale {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.9);
+    transform: translateX(-50%) scale(0.9);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateX(-50%) scale(1);
   }
 }
 
@@ -951,6 +1070,8 @@ watch(isSpacePressed, (newValue) => {
   overflow: visible;
   cursor: pointer;
   transform-origin: center center;
+  contain: layout; /* Prevents layout shifts */
+  will-change: transform, width, height; /* Optimizes animations */
 }
 
 .control-center:hover {
@@ -971,7 +1092,7 @@ watch(isSpacePressed, (newValue) => {
   justify-content: center;
   flex: 1;
   position: absolute;
-  left: 50px;
+  left: 12px;
   right: 12px;
   height: 100%;
   padding: 0 8px;
@@ -980,9 +1101,9 @@ watch(isSpacePressed, (newValue) => {
 .layer-controls {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
-  gap: 4px;
+  gap: 8px;
 }
 
 .zoom-section {
@@ -1047,6 +1168,11 @@ watch(isSpacePressed, (newValue) => {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: backdrop-filter 1s ease-out;
+}
+
+.grid-main.grid-blurred {
+  backdrop-filter: blur(25px);
 }
 
 .drawing-canvas {
@@ -1304,9 +1430,9 @@ watch(isSpacePressed, (newValue) => {
 }
 
 .layer-controls .p-button {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
   background: rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   color: rgba(255, 255, 255, 0.8) !important;
@@ -1316,7 +1442,7 @@ watch(isSpacePressed, (newValue) => {
 }
 
 .layer-controls .p-button i {
-  font-size: 14px !important;
+  font-size: 20px !important;
   margin: 0 !important;
 }
 

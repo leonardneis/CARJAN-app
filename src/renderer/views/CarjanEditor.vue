@@ -183,19 +183,6 @@
       </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div v-if="loading" class="editor-loading">
-      <Card class="loading-card">
-        <template #content>
-          <div class="loading-content">
-            <ProgressSpinner />
-            <h3>Loading CARJAN Editor</h3>
-            <p>{{ loadingMessage }}</p>
-          </div>
-        </template>
-      </Card>
-    </div>
-
     <!-- Notifications -->
     <Toast position="bottom-right" />
 
@@ -240,8 +227,6 @@ const toast = useToast();
 const confirm = useConfirm();
 
 // State
-const loading = ref(true);
-const loadingMessage = ref("Initializing editor...");
 const hoveredCell = ref(null);
 
 // Available modes for the switcher
@@ -295,13 +280,9 @@ const loadSampleScenarioData = () => {
 // Lifecycle
 onMounted(async () => {
   try {
-    loadingMessage.value = "Setting up grid...";
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     gridStore.initializeGrid();
 
-    loadingMessage.value = "Loading default scenario...";
-    await new Promise((resolve) => setTimeout(resolve, 300)); // Set some default values
+    // Set some default values
     gridStore.scenarioName = "New Scenario";
     gridStore.weather = "Clear";
     gridStore.category = "Urban";
@@ -309,12 +290,8 @@ onMounted(async () => {
 
     // Check if we should load a sample scenario
     if (route.query.loadSample === "true") {
-      loadingMessage.value = "Loading sample scenario...";
-      await new Promise((resolve) => setTimeout(resolve, 300));
       loadSampleScenarioData();
     }
-
-    loading.value = false;
 
     toast.add({
       severity: "success",
@@ -874,42 +851,6 @@ watch(
 
 .status-item i {
   font-size: 0.75rem;
-}
-
-.editor-loading {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.loading-card {
-  background: rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-.loading-content {
-  text-align: center;
-  padding: 2rem;
-  color: white;
-}
-
-.loading-content h3 {
-  margin: 1rem 0 0.5rem;
-  color: white;
-}
-
-.loading-content p {
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0;
 }
 
 /* Animation for smooth transitions */
