@@ -95,16 +95,27 @@
         </div>
       </template>
     </Card>
+
+    <!-- Warp Overlay for Connection Status Changes -->
+    <WarpOverlay
+      :is-visible="showWarpOverlay"
+      :type="warpOverlayType"
+      :title="warpOverlayTitle"
+      :message="warpOverlayMessage"
+      :duration="1200"
+      @close="hideWarpOverlay"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useToast } from "primevue/usetoast";
 import Card from "primevue/card";
 import Button from "primevue/button";
 import Checkbox from "primevue/checkbox";
 import RadioButton from "primevue/radiobutton";
+import WarpOverlay from "./WarpOverlay.vue";
 
 const toast = useToast();
 
@@ -118,19 +129,49 @@ const exportSettings = ref({
   format: "json",
 });
 
+// Warp Overlay state
+const showWarpOverlay = ref(false);
+const warpOverlayType = ref("success");
+const warpOverlayTitle = ref("");
+const warpOverlayMessage = ref("");
+
 const connectionStatus = computed(() => {
   return connected.value
     ? { text: "Connected to CARLA", class: "status-connected" }
     : { text: "Disconnected", class: "status-disconnected" };
 });
 
+// Watch for connection changes to trigger warp overlay
+watch(connected, (newValue, oldValue) => {
+  // Only trigger if this is an actual change (not initial load)
+  if (oldValue !== undefined) {
+    showWarpOverlay.value = true;
+
+    if (newValue) {
+      warpOverlayType.value = "success";
+      warpOverlayTitle.value = "Connected";
+      warpOverlayMessage.value = "Successfully connected to CARLA simulation";
+    } else {
+      warpOverlayType.value = "error";
+      warpOverlayTitle.value = "Disconnected";
+      warpOverlayMessage.value = "Disconnected from CARLA simulation";
+    }
+  }
+});
+
+const hideWarpOverlay = () => {
+  showWarpOverlay.value = false;
+};
+
 const toggleConnection = () => {
   connected.value = !connected.value;
+
+  // Toast notification (smaller, less prominent)
   toast.add({
     severity: connected.value ? "success" : "info",
-    summary: connected.value ? "Connected" : "Disconnected",
-    detail: connected.value ? "Connected to CARLA" : "Disconnected from CARLA",
-    life: 2000,
+    summary: connected.value ? "CARLA Connected" : "CARLA Disconnected",
+    detail: connected.value ? "Ready for simulation" : "Connection closed",
+    life: 1500,
   });
 };
 
