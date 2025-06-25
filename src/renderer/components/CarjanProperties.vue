@@ -40,28 +40,11 @@
               </div>
 
               <div class="form-field">
-                <label>Map Name</label>
-                <InputText
-                  v-model="gridStore.mapName"
-                  placeholder="Select map"
-                />
-              </div>
-
-              <div class="form-field">
                 <label>Weather</label>
                 <Dropdown
                   v-model="gridStore.weather"
                   :options="weatherOptions"
                   placeholder="Select weather"
-                />
-              </div>
-
-              <div class="form-field">
-                <label>Category</label>
-                <Dropdown
-                  v-model="gridStore.category"
-                  :options="categoryOptions"
-                  placeholder="Select category"
                 />
               </div>
 
@@ -74,40 +57,6 @@
                   option-value="value"
                   placeholder="Select camera position"
                 />
-              </div>
-            </div>
-            <!-- Display Options -->
-            <Divider />
-            <div class="display-options">
-              <h4>Display Options</h4>
-              <div class="toggle-grid">
-                <div class="toggle-item">
-                  <ToggleButton
-                    v-model="gridStore.showGrid"
-                    on-label="Grid Visible"
-                    off-label="Grid Hidden"
-                    on-icon="pi pi-eye"
-                    off-icon="pi pi-eye-slash"
-                  />
-                </div>
-                <div class="toggle-item">
-                  <ToggleButton
-                    v-model="gridStore.showPaths"
-                    on-label="Paths Visible"
-                    off-label="Paths Hidden"
-                    on-icon="pi pi-share-alt"
-                    off-icon="pi pi-eye-slash"
-                  />
-                </div>
-                <div class="toggle-item">
-                  <ToggleButton
-                    v-model="gridStore.showWaypoints"
-                    on-label="Waypoints Visible"
-                    off-label="Waypoints Hidden"
-                    on-icon="pi pi-map-marker"
-                    off-icon="pi pi-eye-slash"
-                  />
-                </div>
               </div>
             </div>
 

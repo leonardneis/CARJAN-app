@@ -5,31 +5,36 @@
       <!-- Left Panel - Tools and Files -->
       <SplitterPanel :size="25" :min-size="20" :max-size="35">
         <div class="left-panel">
-          <!-- Tab Navigation -->
-          <TabView class="panel-tabs">
-            <TabPanel header="Files" left-icon="pi pi-folder">
+          <!-- Smooth Tab Navigation -->
+          <SmoothTabs
+            :tabs="leftPanelTabs"
+            default-tab="files"
+            @tab-change="handleLeftTabChange"
+            class="panel-tabs"
+          >
+            <template #files>
               <CarjanImport
                 @map-loaded="handleMapLoaded"
                 @scenario-loaded="handleScenarioLoaded"
               />
-            </TabPanel>
+            </template>
 
-            <TabPanel header="Maps" left-icon="pi pi-map">
+            <template #maps>
               <CarjanMaps @map-selected="handleMapSelected" />
-            </TabPanel>
+            </template>
 
-            <TabPanel header="Entities" left-icon="pi pi-users">
+            <template #entities>
               <CarjanEntities @entity-drag-start="handleEntityDragStart" />
-            </TabPanel>
+            </template>
 
-            <TabPanel header="Tools" left-icon="pi pi-wrench">
+            <template #tools>
               <CarjanTools @mode-change="handleModeChange" />
-            </TabPanel>
+            </template>
 
-            <TabPanel header="CARLA" left-icon="pi pi-cog">
+            <template #carla>
               <CarjanCarla @export-scenario="handleExportScenario" />
-            </TabPanel>
-          </TabView>
+            </template>
+          </SmoothTabs>
         </div>
       </SplitterPanel>
 
@@ -139,16 +144,8 @@
     <div class="status-bar">
       <div class="status-left">
         <div class="status-item">
-          <i class="pi pi-map"></i>
-          <span>{{ gridStore.mapName || "No map loaded" }}</span>
-        </div>
-        <div class="status-item">
           <i class="pi pi-cloud"></i>
           <span>{{ gridStore.weather }}</span>
-        </div>
-        <div class="status-item">
-          <i class="pi pi-building"></i>
-          <span>{{ gridStore.category }}</span>
         </div>
         <div class="status-item">
           <i class="pi pi-cog"></i>
@@ -202,8 +199,6 @@ import { motion } from "motion-v";
 // Components
 import Splitter from "primevue/splitter";
 import SplitterPanel from "primevue/splitterpanel";
-import TabView from "primevue/tabview";
-import TabPanel from "primevue/tabpanel";
 import Button from "primevue/button";
 import Badge from "primevue/badge";
 import Card from "primevue/card";
@@ -219,6 +214,7 @@ import CarjanMaps from "../components/CarjanMaps.vue";
 import CarjanEntities from "../components/CarjanEntities.vue";
 import CarjanTools from "../components/CarjanTools.vue";
 import CarjanCarla from "../components/CarjanCarla.vue";
+import SmoothTabs from "../components/SmoothTabs.vue";
 
 // Store and utilities
 const gridStore = useGridStore();
@@ -231,9 +227,38 @@ const hoveredCell = ref(null);
 
 // Available modes for the switcher
 const availableModes = [
-  { key: "edit", label: "Edit Mode", icon: "pi pi-pencil" },
+  { key: "edit", label: "Edit Mode", icon: "pi pi-palette" },
   { key: "path", label: "Path Mode", icon: "pi pi-share-alt" },
   { key: "dbox", label: "DBox Mode", icon: "pi pi-inbox" },
+];
+
+// Left panel tabs configuration
+const leftPanelTabs = [
+  {
+    id: "files",
+    title: "Files",
+    icon: "pi pi-folder",
+  },
+  {
+    id: "maps",
+    title: "Maps",
+    icon: "pi pi-map",
+  },
+  {
+    id: "entities",
+    title: "Entities",
+    icon: "pi pi-users",
+  },
+  {
+    id: "tools",
+    title: "Tools",
+    icon: "pi pi-wrench",
+  },
+  {
+    id: "carla",
+    title: "CARLA",
+    icon: "pi pi-cog",
+  },
 ];
 
 // Helper method to load sample scenario data
@@ -462,6 +487,11 @@ const handlePathSelected = (path) => {
 
 const handleCellHovered = (cellCoords) => {
   hoveredCell.value = cellCoords;
+};
+
+const handleLeftTabChange = (tab) => {
+  // Optional: Add any specific logic when tabs change
+  console.log("Tab changed to:", tab.title);
 };
 
 const handleExportScenario = () => {
@@ -713,33 +743,7 @@ watch(
   height: 100%;
 }
 
-:deep(.p-tabview) {
-  background: transparent !important;
-}
-
-:deep(.p-tabview-nav) {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-:deep(.p-tabview-nav-link) {
-  color: white !important;
-  border-color: transparent !important;
-}
-
-:deep(.p-tabview-nav-link:hover) {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
-:deep(.p-tabview-nav li.p-highlight .p-tabview-nav-link) {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-bottom-color: white !important;
-}
-
-:deep(.p-tabview-panels) {
-  background: transparent !important;
-  color: white !important;
-}
+/* Remove old PrimeVue TabView styles since we're using SmoothTabs now */
 
 .grid-header {
   display: grid;
