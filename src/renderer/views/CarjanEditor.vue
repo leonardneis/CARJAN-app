@@ -30,10 +30,6 @@
             <template #tools>
               <CarjanTools @mode-change="handleModeChange" />
             </template>
-
-            <template #carla>
-              <CarjanCarla @export-scenario="handleExportScenario" />
-            </template>
           </SmoothTabs>
         </div>
       </SplitterPanel>
@@ -181,7 +177,7 @@
     </div>
 
     <!-- Notifications -->
-    <Toast position="bottom-right" />
+    <Toast position="bottom-right" style="bottom: 50px; z-index: 1100" />
 
     <!-- Confirmation Dialogs -->
     <ConfirmDialog />
@@ -191,6 +187,7 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
+import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useGridStore } from "../store/grid";
@@ -213,12 +210,12 @@ import CarjanImport from "../components/CarjanImport.vue";
 import CarjanMaps from "../components/CarjanMaps.vue";
 import CarjanEntities from "../components/CarjanEntities.vue";
 import CarjanTools from "../components/CarjanTools.vue";
-import CarjanCarla from "../components/CarjanCarla.vue";
 import SmoothTabs from "../components/SmoothTabs.vue";
 
 // Store and utilities
 const gridStore = useGridStore();
 const route = useRoute();
+const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
 
@@ -236,7 +233,7 @@ const availableModes = [
 const leftPanelTabs = [
   {
     id: "files",
-    title: "Files",
+    title: "General",
     icon: "pi pi-folder",
   },
   {
@@ -253,11 +250,6 @@ const leftPanelTabs = [
     id: "tools",
     title: "Tools",
     icon: "pi pi-wrench",
-  },
-  {
-    id: "carla",
-    title: "CARLA",
-    icon: "pi pi-cog",
   },
 ];
 
@@ -418,8 +410,8 @@ const handleQuitEditor = () => {
     icon: "pi pi-question-circle",
     acceptClass: "p-button-danger",
     accept: () => {
-      // Navigate back or close editor
-      window.history.back();
+      // Navigate back to main menu
+      router.push("/");
     },
   });
 };

@@ -1,0 +1,43 @@
+{
+  "id": "residential-street",
+  "name": "Residential Street",
+  "description": "A quiet residential street with sidewalks and pedestrian crossings",
+  "category": "Residential",
+  "size": {
+    "rows": 12,
+    "cols": 8
+  },
+  "thumbnail": "/maps/thumbnails/residential-street.png",
+  "difficulty": "Easy",
+  "recommendedEntities": ["vehicle", "pedestrian", "autonomous"],
+  "spawnPoints": [
+    { "x": 5, "y": 1, "type": "vehicle" },
+    { "x": 7, "y": 6, "type": "autonomous" },
+    { "x": 2, "y": 2, "type": "pedestrian" },
+    { "x": 9, "y": 5, "type": "pedestrian" }
+  ],
+  "mapData": [
+    ["v", "v", "p", "r", "r", "p", "v", "v"],
+    ["v", "v", "p", "r", "r", "p", "v", "v"],
+    ["v", "v", "p", "p", "p", "p", "v", "v"],
+    ["v", "v", "p", "r", "r", "p", "v", "v"],
+    ["v", "v", "p", "r", "r", "p", "v", "v"],
+    ["v", "v", "p", "r", "r", "p", "v", "v"],
+    ["v", "v", "p", "r", "r", "p", "v", "v"],
+    ["v", "v", "p", "r", "r", "p", "v", "v"],
+    ["v", "v", "p", "p", "p", "p", "v", "v"],
+    ["v", "v", "p", "r", "r", "p", "v", "v"],
+    ["v", "v", "p", "r", "r", "p", "v", "v"],
+    ["v", "v", "p", "r", "r", "p", "v", "v"]
+  ],
+  "legend": {
+    "v": "void",
+    "r": "road",
+    "p": "path/sidewalk"
+  },
+  "metadata": {
+    "created": "2025-06-26",
+    "version": "1.0",
+    "author": "CARJAN Default Maps"
+  }
+}

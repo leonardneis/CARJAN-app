@@ -1,0 +1,12 @@
+# CARLA WebSocket Bridge Requirements
+# Run: pip install -r requirements.txt
+
+# WebSocket server
+websockets>=11.0.0
+
+# CARLA Python API (install separately from CARLA distribution)
+# carla>=0.9.13
+
+# Logging and utilities
+asyncio-mqtt>=0.11.0  # Optional: for MQTT integration
+numpy>=1.21.0         # Often required by CARLA

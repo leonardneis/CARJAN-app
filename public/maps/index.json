@@ -1,0 +1,75 @@
+{
+  "maps": [
+    {
+      "id": "highway-straight",
+      "name": "Highway Straight",
+      "description": "A straight highway section perfect for overtaking scenarios",
+      "category": "Highway",
+      "difficulty": "Easy",
+      "thumbnail": "/maps/thumbnails/highway-straight.png",
+      "file": "/maps/highway-straight.json"
+    },
+    {
+      "id": "urban-intersection",
+      "name": "Urban Intersection",
+      "description": "A complex city intersection with multiple road connections",
+      "category": "Urban",
+      "difficulty": "Medium",
+      "thumbnail": "/maps/thumbnails/urban-intersection.png",
+      "file": "/maps/urban-intersection.json"
+    },
+    {
+      "id": "parking-lot",
+      "name": "Parking Lot",
+      "description": "A parking area with pedestrian paths - ideal for autonomous parking scenarios",
+      "category": "Urban",
+      "difficulty": "Easy",
+      "thumbnail": "/maps/thumbnails/parking-lot.png",
+      "file": "/maps/parking-lot.json"
+    },
+    {
+      "id": "highway-curve",
+      "name": "Highway Curve",
+      "description": "A curved highway section with challenging turns and lane changes",
+      "category": "Highway",
+      "difficulty": "Hard",
+      "thumbnail": "/maps/thumbnails/highway-curve.png",
+      "file": "/maps/highway-curve.json"
+    },
+    {
+      "id": "city-roundabout",
+      "name": "City Roundabout",
+      "description": "A circular roundabout in an urban environment with multiple entry/exit points",
+      "category": "Urban",
+      "difficulty": "Hard",
+      "thumbnail": "/maps/thumbnails/city-roundabout.png",
+      "file": "/maps/city-roundabout.json"
+    },
+    {
+      "id": "residential-street",
+      "name": "Residential Street",
+      "description": "A quiet residential street with sidewalks and pedestrian crossings",
+      "category": "Residential",
+      "difficulty": "Easy",
+      "thumbnail": "/maps/thumbnails/residential-street.png",
+      "file": "/maps/residential-street.json"
+    }
+  ],
+  "categories": [
+    {
+      "id": "highway",
+      "name": "Highway",
+      "description": "High-speed roads for vehicle scenarios"
+    },
+    {
+      "id": "urban",
+      "name": "Urban",
+      "description": "City environments with mixed traffic"
+    },
+    {
+      "id": "residential",
+      "name": "Residential",
+      "description": "Quiet neighborhood streets"
+    }
+  ]
+}

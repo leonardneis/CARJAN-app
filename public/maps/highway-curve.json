@@ -1,0 +1,42 @@
+{
+  "id": "highway-curve",
+  "name": "Highway Curve",
+  "description": "A curved highway section with challenging turns and lane changes",
+  "category": "Highway",
+  "size": {
+    "rows": 12,
+    "cols": 8
+  },
+  "thumbnail": "/maps/thumbnails/highway-curve.png",
+  "difficulty": "Hard",
+  "recommendedEntities": ["vehicle", "autonomous"],
+  "spawnPoints": [
+    { "x": 11, "y": 3, "type": "vehicle" },
+    { "x": 10, "y": 4, "type": "autonomous" },
+    { "x": 0, "y": 3, "type": "vehicle" }
+  ],
+  "mapData": [
+    ["v", "v", "v", "r", "r", "v", "v", "v"],
+    ["v", "v", "r", "r", "r", "r", "v", "v"],
+    ["v", "r", "r", "r", "r", "r", "r", "v"],
+    ["r", "r", "r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r", "r", "r"],
+    ["v", "r", "r", "r", "r", "r", "r", "v"],
+    ["v", "v", "r", "r", "r", "r", "v", "v"],
+    ["v", "v", "v", "r", "r", "v", "v", "v"],
+    ["v", "v", "v", "r", "r", "v", "v", "v"],
+    ["v", "v", "v", "r", "r", "v", "v", "v"]
+  ],
+  "legend": {
+    "v": "void",
+    "r": "road",
+    "p": "path/sidewalk"
+  },
+  "metadata": {
+    "created": "2025-06-26",
+    "version": "1.0",
+    "author": "CARJAN Default Maps"
+  }
+}

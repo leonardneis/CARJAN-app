@@ -181,6 +181,7 @@ const router = useRouter();
 // Menu items
 const menuItems = [
   { name: "home", label: "Home", icon: "pi pi-home" },
+  { name: "scenarios", label: "Scenario Manager", icon: "pi pi-map" },
   { name: "editor", label: "Editor", icon: "pi pi-code" },
   { name: "settings", label: "Einstellungen", icon: "pi pi-cog" },
 ];
@@ -237,7 +238,12 @@ const collapseSidebar = () => {
 };
 
 const selectItem = (itemName) => {
-  activeItem.value = itemName;
+  if (itemName === "scenarios") {
+    // Navigate to Scenario Manager
+    router.push("/scenarios");
+  } else {
+    activeItem.value = itemName;
+  }
 };
 
 const getFileIcon = (type) => {

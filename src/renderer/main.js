@@ -12,19 +12,25 @@ import { createPinia } from "pinia";
 import ToastService from "primevue/toastservice";
 import ConfirmationService from "primevue/confirmationservice";
 
-const app = createApp(App);
-app.use(PrimeVue, {
-  theme: {
-    preset: Aura,
-    options: {
-      darkModeSelector: "system",
-    },
-  },
-});
-app.directive("tooltip", Tooltip);
-app.use(router);
-app.use(createPinia());
-app.use(ToastService);
-app.use(ConfirmationService);
+try {
+  const app = createApp(App);
 
-app.mount("#app");
+  app.use(PrimeVue, {
+    theme: {
+      preset: Aura,
+      options: {
+        darkModeSelector: "system",
+      },
+    },
+  });
+
+  app.directive("tooltip", Tooltip);
+  app.use(router);
+  app.use(createPinia());
+  app.use(ToastService);
+  app.use(ConfirmationService);
+
+  app.mount("#app");
+} catch (error) {
+  console.error("Error starting app:", error);
+}

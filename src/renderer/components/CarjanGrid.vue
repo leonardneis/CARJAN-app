@@ -995,6 +995,41 @@ onMounted(() => {
   }, switchTime * 1000);
 });
 
+// Watch for map animation trigger
+watch(
+  () => gridStore.mapAnimating,
+  (newValue) => {
+    if (newValue) {
+      // Reset animation state
+      gridBlurred.value = true;
+      rippleAnimationComplete.value = false;
+
+      // Generate new random center for this map load
+      animationCenter.value = {
+        row: Math.floor(Math.random() * gridStore.gridRows),
+        col: Math.floor(Math.random() * gridStore.gridCols),
+      };
+
+      // Calculate animation completion time
+      const maxDistance = gridStore.gridRows - 1 + (gridStore.gridCols - 1);
+      const maxDelay = maxDistance * 0.05;
+      const animationDuration = 0.6;
+      const totalTime = maxDelay + animationDuration;
+      const switchTime = totalTime - 0.5;
+
+      // Complete animation and notify store
+      setTimeout(() => {
+        gridBlurred.value = false;
+        rippleAnimationComplete.value = true;
+        gridStore.completeMapAnimation();
+
+        // Emit event to trigger panel fade-in
+        window.dispatchEvent(new CustomEvent("ripple-animation-complete"));
+      }, switchTime * 1000);
+    }
+  }
+);
+
 // Animation delay calculation for staggered grid effect
 const getCellAnimationDelay = (cell) => {
   // Calculate distance from random center using Manhattan distance for ripple effect
@@ -1065,7 +1100,7 @@ watch(isSpacePressed, (newValue) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
   border: 1px solid rgba(255, 255, 255, 0.18);
   overflow: visible;
   cursor: pointer;

@@ -2,6 +2,7 @@
   "name": "carjan-app",
   "version": "1.0.0",
   "license": "MIT",
+  "type": "module",
   "main": "src/main/index.js",
   "dependencies": {
     "@primeuix/themes": "^1.1.1",
