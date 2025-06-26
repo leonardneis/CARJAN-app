@@ -1,0 +1,33 @@
+# Node
+node_modules/
+npm-debug.log*
+*.log
+
+# Vite
+dist/
+.vite/
+.cache/
+
+# Electron output
+out/
+build/
+
+# System
+.DS_Store
+Thumbs.db
+
+# IDEs/Editor
+.vscode/
+.idea/
+.github/
+*.code-workspace
+carjan-old/
+md-logs/
+reference/
+
+# OS/Exec
+*.exe
+*.bat
+
+# Environment
+.env
