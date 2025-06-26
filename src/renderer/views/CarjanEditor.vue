@@ -19,10 +19,6 @@
               />
             </template>
 
-            <template #maps>
-              <CarjanMaps @map-selected="handleMapSelected" />
-            </template>
-
             <template #entities>
               <CarjanEntities @entity-drag-start="handleEntityDragStart" />
             </template>
@@ -153,13 +149,13 @@
           <i class="pi pi-search-plus"></i>
           <span>{{ Math.round(gridStore.scale * 100) }}%</span>
         </div>
-        <div v-if="hoveredCell" class="status-item">
+        <div v-if="hoveredCell" class="status-item coordinates">
           <i class="pi pi-crosshairs"></i>
-          <span>Row: {{ hoveredCell.y }}, Col: {{ hoveredCell.x }},</span>
+          <span>Row: {{ hoveredCell.y }}, Col: {{ hoveredCell.x }}</span>
         </div>
-        <div v-else class="status-item">
+        <div v-else class="status-item coordinates">
           <i class="pi pi-crosshairs"></i>
-          <span>Row: -, Col : -</span>
+          <span>Row: -, Col: -</span>
         </div>
         <div class="status-item">
           <i class="pi pi-users"></i>
@@ -207,7 +203,6 @@ import ConfirmDialog from "primevue/confirmdialog";
 import CarjanGrid from "../components/CarjanGrid.vue";
 import CarjanProperties from "../components/CarjanProperties.vue";
 import CarjanImport from "../components/CarjanImport.vue";
-import CarjanMaps from "../components/CarjanMaps.vue";
 import CarjanEntities from "../components/CarjanEntities.vue";
 import CarjanTools from "../components/CarjanTools.vue";
 import SmoothTabs from "../components/SmoothTabs.vue";
@@ -235,11 +230,6 @@ const leftPanelTabs = [
     id: "files",
     title: "General",
     icon: "pi pi-folder",
-  },
-  {
-    id: "maps",
-    title: "Maps",
-    icon: "pi pi-map",
   },
   {
     id: "entities",
@@ -294,6 +284,100 @@ const loadSampleScenarioData = () => {
   ];
 };
 
+// Helper method to load scenario data from route query
+const loadScenarioFromQuery = () => {
+  try {
+    const scenarioId = route.query.loadScenario;
+    const scenarioDataString = route.query.scenarioData;
+
+    if (scenarioDataString) {
+      const scenarioData = JSON.parse(scenarioDataString);
+
+      // Load scenario metadata
+      if (scenarioData.metadata) {
+        gridStore.scenarioName =
+          scenarioData.metadata.name || "Loaded Scenario";
+      }
+
+      // Load environment settings
+      if (scenarioData.environment) {
+        gridStore.mapName = scenarioData.environment.map || "Town01";
+        gridStore.weather = scenarioData.environment.weather || "Clear";
+        gridStore.category = scenarioData.environment.category || "Urban";
+        gridStore.cameraPosition =
+          scenarioData.environment.cameraPosition || "up";
+      }
+
+      // Load grid configuration
+      if (scenarioData.grid) {
+        if (scenarioData.grid.dimensions) {
+          gridStore.gridConfig.rows = scenarioData.grid.dimensions.rows || 12;
+          gridStore.gridConfig.cols = scenarioData.grid.dimensions.cols || 8;
+        }
+        if (scenarioData.grid.cellSize) {
+          gridStore.gridConfig.cellWidth =
+            scenarioData.grid.cellSize.width || 60;
+          gridStore.gridConfig.cellHeight =
+            scenarioData.grid.cellSize.height || 50;
+        }
+      }
+
+      // Load entities
+      if (scenarioData.entities && Array.isArray(scenarioData.entities)) {
+        gridStore.entities = scenarioData.entities.map((entity) => ({
+          id: entity.id,
+          type: entity.type,
+          position: { x: entity.x, y: entity.y },
+          rotation: 0, // Default rotation
+          model:
+            entity.type === "vehicle"
+              ? "vehicle.audi.a2"
+              : "walker.pedestrian.0001",
+          color: entity.color || "#4CAF50",
+        }));
+      }
+
+      // Load waypoints
+      if (scenarioData.waypoints && Array.isArray(scenarioData.waypoints)) {
+        gridStore.waypoints = scenarioData.waypoints.map((wp) => ({
+          id: wp.id,
+          position: { x: wp.x, y: wp.y },
+          positionInCell: wp.positionInCell || "middle-center",
+        }));
+      }
+
+      // Load paths
+      if (scenarioData.paths && Array.isArray(scenarioData.paths)) {
+        gridStore.paths = scenarioData.paths.map((path) => ({
+          id: path.id,
+          waypoints: path.waypoints?.map((wp) => wp.id) || [],
+          color: path.color || "#4CAF50",
+        }));
+      }
+
+      // Reinitialize grid with new data
+      gridStore.initializeGrid();
+
+      toast.add({
+        severity: "success",
+        summary: "Scenario Loaded",
+        detail: `${gridStore.scenarioName} has been loaded successfully`,
+        life: 3000,
+      });
+    } else {
+      console.warn("No scenario data found in query parameters");
+    }
+  } catch (error) {
+    console.error("Error loading scenario from query:", error);
+    toast.add({
+      severity: "error",
+      summary: "Loading Error",
+      detail: "Failed to load the selected scenario",
+      life: 5000,
+    });
+  }
+};
+
 // Lifecycle
 onMounted(async () => {
   try {
@@ -305,9 +389,11 @@ onMounted(async () => {
     gridStore.category = "Urban";
     gridStore.cameraPosition = "up";
 
-    // Check if we should load a sample scenario
+    // Check if we should load a sample scenario or a specific scenario
     if (route.query.loadSample === "true") {
       loadSampleScenarioData();
+    } else if (route.query.loadScenario) {
+      loadScenarioFromQuery();
     }
 
     toast.add({
@@ -434,16 +520,6 @@ const handleScenarioLoaded = (scenario) => {
     summary: "Scenario Loaded",
     detail: `Scenario "${scenario.scenarioName}" has been loaded`,
     life: 3000,
-  });
-};
-
-const handleMapSelected = (mapName) => {
-  gridStore.mapName = mapName;
-  toast.add({
-    severity: "info",
-    summary: "Map Selected",
-    detail: `Selected map: ${mapName}`,
-    life: 2000,
   });
 };
 
@@ -843,6 +919,10 @@ watch(
   align-items: center;
   gap: 0.25rem;
   color: rgba(255, 255, 255, 0.8);
+}
+
+.status-item.coordinates {
+  min-width: 120px;
 }
 
 .status-item i {

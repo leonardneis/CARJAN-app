@@ -41,10 +41,21 @@
             <!-- Scenario Info -->
             <div class="scenario-info">
               <div class="scenario-name">{{ scenario.name }}</div>
+              <div class="scenario-description" v-if="scenario.description">
+                {{ scenario.description }}
+              </div>
               <div class="scenario-details">
                 <div class="detail-line">
                   <span class="detail-label">Map:</span>
                   <span class="detail-value">{{ scenario.mapName }}</span>
+                </div>
+                <div class="detail-line" v-if="scenario.category">
+                  <span class="detail-label">Category:</span>
+                  <span class="detail-value">{{ scenario.category }}</span>
+                </div>
+                <div class="detail-line">
+                  <span class="detail-label">Entities:</span>
+                  <span class="detail-value">{{ scenario.entityCount }}</span>
                 </div>
                 <div class="detail-line">
                   <span class="detail-label">Last access:</span>
@@ -156,40 +167,91 @@ const selectedScenario = ref(null);
 const showDeleteDialog = ref(false);
 
 // Load scenarios from localStorage
-const loadScenarios = () => {
+const loadScenarios = async () => {
   try {
     const saved = localStorage.getItem("carjan-scenarios");
     if (saved) {
       scenarios.value = JSON.parse(saved);
     }
 
-    // Add some sample scenarios if none exist
+    // Add example scenarios if none exist
     if (scenarios.value.length === 0) {
-      scenarios.value = [
-        {
-          id: "demo_1",
-          name: "Highway Demo",
-          mapName: "Highway Straight",
-          lastModified: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          entityCount: 5,
-          pathCount: 2,
-          waypointCount: 8,
-        },
-        {
-          id: "demo_2",
-          name: "Urban Traffic",
-          mapName: "Urban Intersection",
-          lastModified: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-          entityCount: 12,
-          pathCount: 4,
-          waypointCount: 15,
-        },
-      ];
-      saveScenarios();
+      await loadExampleScenarios();
     }
   } catch (error) {
     console.error("Error loading scenarios:", error);
     scenarios.value = [];
+  }
+};
+
+const loadExampleScenarios = async () => {
+  try {
+    const exampleFiles = [
+      "highway-overtaking.json",
+      "parking-lot.json",
+      "urban-intersection.json",
+    ];
+
+    const loadedScenarios = [];
+
+    for (const filename of exampleFiles) {
+      try {
+        const response = await fetch(`/example-scenarios/${filename}`);
+        if (response.ok) {
+          const scenarioData = await response.json();
+
+          // Convert to our scenario format
+          const scenario = {
+            id: filename.replace(".json", ""),
+            name: scenarioData.metadata.name,
+            mapName: scenarioData.environment.map,
+            lastModified: scenarioData.metadata.modified,
+            entityCount: scenarioData.entities
+              ? scenarioData.entities.length
+              : 0,
+            pathCount: scenarioData.paths ? scenarioData.paths.length : 0,
+            waypointCount: scenarioData.waypoints
+              ? scenarioData.waypoints.length
+              : 0,
+            description: scenarioData.metadata.description,
+            category: scenarioData.environment.category,
+            author: scenarioData.metadata.author,
+            data: scenarioData, // Store the full scenario data
+          };
+
+          loadedScenarios.push(scenario);
+        }
+      } catch (fileError) {
+        console.warn(`Could not load ${filename}:`, fileError);
+      }
+    }
+
+    scenarios.value = loadedScenarios;
+    saveScenarios();
+  } catch (error) {
+    console.error("Error loading example scenarios:", error);
+    // Fallback to mock data if loading fails
+    scenarios.value = [
+      {
+        id: "demo_1",
+        name: "Highway Demo",
+        mapName: "Highway Straight",
+        lastModified: new Date(Date.now() - 86400000).toISOString(),
+        entityCount: 5,
+        pathCount: 2,
+        waypointCount: 8,
+      },
+      {
+        id: "demo_2",
+        name: "Urban Traffic",
+        mapName: "Urban Intersection",
+        lastModified: new Date(Date.now() - 172800000).toISOString(),
+        entityCount: 12,
+        pathCount: 4,
+        waypointCount: 15,
+      },
+    ];
+    saveScenarios();
   }
 };
 
@@ -206,7 +268,7 @@ const playSelectedWorld = () => {
 
   toast.add({
     severity: "info",
-    summary: "Loading World",
+    summary: "Loading Scenario",
     detail: `Loading ${selectedScenario.value.name}...`,
     life: 2000,
   });
@@ -214,7 +276,12 @@ const playSelectedWorld = () => {
   // Navigate to editor with selected scenario
   router.push({
     name: "CarjanEditor",
-    query: { loadScenario: selectedScenario.value.id },
+    query: {
+      loadScenario: selectedScenario.value.id,
+      scenarioData: selectedScenario.value.data
+        ? JSON.stringify(selectedScenario.value.data)
+        : undefined,
+    },
   });
 };
 
@@ -293,8 +360,8 @@ const duplicateScenario = (scenario) => {
   });
 };
 
-onMounted(() => {
-  loadScenarios();
+onMounted(async () => {
+  await loadScenarios();
 });
 </script>
 
@@ -424,6 +491,13 @@ onMounted(() => {
   font-size: 1.2rem;
   font-weight: 500;
   margin-bottom: 0.5rem;
+}
+
+.scenario-description {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
 }
 
 .scenario-details {
