@@ -1,0 +1,328 @@
+{
+  "metadata": {
+    "name": "Highway Overtaking Scenario",
+    "version": "1.0.0",
+    "created": "2025-06-26T10:15:00.000Z",
+    "modified": "2025-06-26T10:15:00.000Z",
+    "author": "CARJAN Team",
+    "description": "Multi-lane highway with overtaking maneuvers and varying traffic density"
+  },
+  "environment": {
+    "map": "town04",
+    "weather": "Clear",
+    "category": "Highway",
+    "cameraPosition": "up"
+  },
+  "grid": {
+    "dimensions": {
+      "rows": 12,
+      "cols": 8
+    },
+    "cellSize": {
+      "width": 60,
+      "height": 50
+    },
+    "mapData": [
+      ["v", "v", "v", "v", "v", "v", "v", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "v", "v", "v", "v", "v", "v", "v"]
+    ]
+  },
+  "entities": [
+    {
+      "id": "fast_car",
+      "type": "vehicle",
+      "x": 2,
+      "y": 1,
+      "color": "#E91E63",
+      "heading": "East"
+    },
+    {
+      "id": "slow_truck",
+      "type": "vehicle",
+      "x": 3,
+      "y": 4,
+      "color": "#FF9800",
+      "heading": "East"
+    },
+    {
+      "id": "highway_car_1",
+      "type": "vehicle",
+      "x": 5,
+      "y": 2,
+      "color": "#2196F3",
+      "heading": "East"
+    },
+    {
+      "id": "highway_car_2",
+      "type": "vehicle",
+      "x": 7,
+      "y": 5,
+      "color": "#4CAF50",
+      "heading": "East"
+    },
+    {
+      "id": "oncoming_car",
+      "type": "vehicle",
+      "x": 8,
+      "y": 6,
+      "color": "#9C27B0",
+      "heading": "West"
+    }
+  ],
+  "paths": [
+    {
+      "id": "right_lane_path",
+      "color": "#2196F3",
+      "waypoints": [
+        {
+          "id": "rl_wp_001",
+          "x": 1,
+          "y": 2,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "rl_wp_002",
+          "x": 3,
+          "y": 2,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "rl_wp_003",
+          "x": 5,
+          "y": 2,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "rl_wp_004",
+          "x": 7,
+          "y": 2,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "rl_wp_005",
+          "x": 9,
+          "y": 2,
+          "positionInCell": "middle-center"
+        }
+      ]
+    },
+    {
+      "id": "left_lane_path",
+      "color": "#4CAF50",
+      "waypoints": [
+        {
+          "id": "ll_wp_001",
+          "x": 1,
+          "y": 4,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "ll_wp_002",
+          "x": 3,
+          "y": 4,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "ll_wp_003",
+          "x": 5,
+          "y": 4,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "ll_wp_004",
+          "x": 7,
+          "y": 4,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "ll_wp_005",
+          "x": 9,
+          "y": 4,
+          "positionInCell": "middle-center"
+        }
+      ]
+    },
+    {
+      "id": "overtaking_maneuver",
+      "color": "#E91E63",
+      "waypoints": [
+        {
+          "id": "om_wp_001",
+          "x": 1,
+          "y": 2,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "om_wp_002",
+          "x": 2,
+          "y": 2,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "om_wp_003",
+          "x": 3,
+          "y": 3,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "om_wp_004",
+          "x": 4,
+          "y": 4,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "om_wp_005",
+          "x": 6,
+          "y": 4,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "om_wp_006",
+          "x": 7,
+          "y": 3,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "om_wp_007",
+          "x": 8,
+          "y": 2,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "om_wp_008",
+          "x": 9,
+          "y": 2,
+          "positionInCell": "middle-center"
+        }
+      ]
+    }
+  ],
+  "waypoints": [
+    {
+      "id": "rl_wp_001",
+      "x": 1,
+      "y": 2,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "rl_wp_002",
+      "x": 3,
+      "y": 2,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "rl_wp_003",
+      "x": 5,
+      "y": 2,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "rl_wp_004",
+      "x": 7,
+      "y": 2,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "rl_wp_005",
+      "x": 9,
+      "y": 2,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "ll_wp_001",
+      "x": 1,
+      "y": 4,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "ll_wp_002",
+      "x": 3,
+      "y": 4,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "ll_wp_003",
+      "x": 5,
+      "y": 4,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "ll_wp_004",
+      "x": 7,
+      "y": 4,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "ll_wp_005",
+      "x": 9,
+      "y": 4,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "om_wp_001",
+      "x": 1,
+      "y": 2,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "om_wp_002",
+      "x": 2,
+      "y": 2,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "om_wp_003",
+      "x": 3,
+      "y": 3,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "om_wp_004",
+      "x": 4,
+      "y": 4,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "om_wp_005",
+      "x": 6,
+      "y": 4,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "om_wp_006",
+      "x": 7,
+      "y": 3,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "om_wp_007",
+      "x": 8,
+      "y": 2,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "om_wp_008",
+      "x": 9,
+      "y": 2,
+      "positionInCell": "middle-center"
+    }
+  ],
+  "dboxes": [],
+  "settings": {
+    "showGrid": true,
+    "showPaths": true,
+    "showWaypoints": true,
+    "showEntities": true,
+    "showDBoxes": true
+  }
+}

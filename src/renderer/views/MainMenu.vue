@@ -1,5 +1,8 @@
 <template>
-  <div class="main-menu">
+  <div class="main-menu" :class="{ 'fade-in': isLoaded }">
+    <!-- Vanta.js Background -->
+    <div ref="vantaRef" class="vanta-background"></div>
+
     <div class="menu-background">
       <!-- Logo/Title Section -->
       <div class="game-title">
@@ -15,7 +18,7 @@
         <Button
           label="Editor"
           @click="goToScenarios"
-          class="menu-button primary-button"
+          class="menu-button secondary-button"
           size="large"
         />
         <Button
@@ -49,7 +52,7 @@
 
       <!-- Bottom Info -->
       <div class="bottom-left-info" tabindex="-1" role="presentation">
-        <span class="version-info">CARJAN v1.0.0</span>
+        <span class="version-info">CARJAN pre-alpha</span>
       </div>
       <div class="bottom-right-info" tabindex="-1" role="presentation">
         <span class="copyright">© 2025 Leonard Neis</span>
@@ -59,12 +62,40 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
+import { initVantaDots, destroyVantaEffect } from "../services/vantaService.js";
 
 const router = useRouter();
 const toast = useToast();
+
+// Vanta.js setup
+const vantaRef = ref(null);
+const isLoaded = ref(false);
+
+onMounted(async () => {
+  // Trigger fade-in animation
+  setTimeout(() => {
+    isLoaded.value = true;
+  }, 100);
+
+  // Wait a bit for the DOM to be ready
+  setTimeout(async () => {
+    if (vantaRef.value) {
+      try {
+        await initVantaDots(vantaRef.value);
+      } catch (error) {
+        console.error("Failed to initialize Vanta effect:", error);
+      }
+    }
+  }, 200);
+});
+
+onUnmounted(() => {
+  destroyVantaEffect();
+});
 
 const goToScenarios = () => {
   router.push("/scenario-selection");
@@ -110,29 +141,23 @@ const quitApplication = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 40% 40%, #2c2f35 0%, #141619 100%);
   position: relative;
   overflow: hidden;
+  opacity: 0;
+  transition: opacity 1s ease-in;
 }
 
-.main-menu::before {
-  content: "";
+.main-menu.fade-in {
+  opacity: 1;
+}
+
+.vanta-background {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-      45deg,
-      rgba(255, 255, 255, 0.02) 25%,
-      transparent 25%
-    ),
-    linear-gradient(-45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-  opacity: 0.3;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
 }
 
 .menu-background {
@@ -146,6 +171,18 @@ const quitApplication = () => {
 
 .game-title {
   text-align: center;
+}
+
+.logo-img {
+  height: auto;
+  filter: drop-shadow(0 0 15px rgba(74, 144, 226, 0.4))
+    drop-shadow(0 0 30px rgba(74, 144, 226, 0.2));
+  transition: filter 0.3s ease;
+}
+
+.logo-img:hover {
+  filter: drop-shadow(0 0 20px rgba(74, 144, 226, 0.6))
+    drop-shadow(0 0 40px rgba(74, 144, 226, 0.3));
 }
 
 .title-text {

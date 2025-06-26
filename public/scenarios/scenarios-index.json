@@ -1,0 +1,37 @@
+{
+  "scenarios": [
+    {
+      "id": "urban-intersection",
+      "name": "Urban Intersection Scenario",
+      "category": "Urban",
+      "map": "town03",
+      "file": "urban-intersection.json",
+      "description": "A busy urban intersection with pedestrians, vehicles, and traffic management",
+      "difficulty": "medium",
+      "duration": "5-10 minutes",
+      "tags": ["intersection", "traffic", "pedestrians", "urban"]
+    },
+    {
+      "id": "highway-overtaking",
+      "name": "Highway Overtaking Scenario",
+      "category": "Highway",
+      "map": "town04",
+      "file": "highway-overtaking.json",
+      "description": "Multi-lane highway with overtaking maneuvers and varying traffic density",
+      "difficulty": "hard",
+      "duration": "10-15 minutes",
+      "tags": ["highway", "overtaking", "high-speed", "traffic"]
+    },
+    {
+      "id": "parking-lot",
+      "name": "Parking Lot Scenario",
+      "category": "Parking",
+      "map": "parking-complex",
+      "file": "parking-lot.json",
+      "description": "Vehicle parking maneuvers in a crowded parking lot with pedestrians",
+      "difficulty": "easy",
+      "duration": "3-7 minutes",
+      "tags": ["parking", "maneuvering", "pedestrians", "low-speed"]
+    }
+  ]
+}

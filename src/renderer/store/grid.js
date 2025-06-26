@@ -211,8 +211,32 @@ export const useGridStore = defineStore("grid", {
     },
 
     // Set map data and update grid
-    setMapData(mapData) {
-      this.mapData = mapData;
+    setMapData(mapInfo) {
+      // Handle both old format (direct map data) and new format (map object with grid)
+      if (mapInfo && mapInfo.grid) {
+        // New format with dimensions
+        this.mapData = mapInfo.grid.mapData;
+        this.gridRows = mapInfo.grid.dimensions.rows;
+        this.gridCols = mapInfo.grid.dimensions.cols;
+
+        // Update cell size if provided
+        if (mapInfo.grid.cellSize) {
+          this.cellWidth = mapInfo.grid.cellSize.width || this.cellWidth;
+          this.cellHeight = mapInfo.grid.cellSize.height || this.cellHeight;
+        }
+
+        // Set map metadata
+        this.mapName = mapInfo.name || mapInfo.id;
+      } else {
+        // Old format - direct map data array
+        this.mapData = mapInfo;
+        // Try to infer dimensions from the array
+        if (Array.isArray(mapInfo) && mapInfo.length > 0) {
+          this.gridRows = mapInfo.length;
+          this.gridCols = mapInfo[0]?.length || this.gridCols;
+        }
+      }
+
       this.updateGridFromMap();
     },
 
@@ -573,7 +597,7 @@ export const useGridStore = defineStore("grid", {
     },
 
     // Scenario management
-    setScenario(scenario) {
+    async setScenario(scenario) {
       this.scenarioName = scenario.scenarioName?.split("#")[1] || null;
       this.mapName = scenario.scenarioMap || null;
       this.weather = scenario.weather || "Clear";
@@ -584,6 +608,21 @@ export const useGridStore = defineStore("grid", {
       if (scenario.paths) this.paths = scenario.paths;
       if (scenario.waypoints) this.waypoints = scenario.waypoints;
       if (scenario.dboxes) this.dboxes = scenario.dboxes;
+
+      // Load the map data when setting a scenario
+      if (this.mapName) {
+        try {
+          const response = await fetch(`/maps/${this.mapName}.json`);
+          if (response.ok) {
+            const mapData = await response.json();
+            this.setMapData(mapData);
+          } else {
+            console.warn(`Could not load map: ${this.mapName}`);
+          }
+        } catch (error) {
+          console.error(`Error loading map ${this.mapName}:`, error);
+        }
+      }
     },
 
     // Visibility toggles

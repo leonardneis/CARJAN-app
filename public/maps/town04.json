@@ -1,0 +1,22 @@
+{
+  "id": "town04",
+  "name": "Town04 - Highway",
+  "description": "Multi-lane highway environment perfect for overtaking maneuvers and high-speed driving",
+  "grid": {
+    "dimensions": { "rows": 12, "cols": 8 },
+    "mapData": [
+      ["v", "v", "v", "v", "v", "v", "v", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "v", "v", "v", "v", "v", "v", "v"]
+    ]
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "metadata": {
+    "name": "Urban Intersection Scenario",
+    "version": "1.0.0",
+    "created": "2025-06-26T10:00:00.000Z",
+    "modified": "2025-06-26T10:00:00.000Z",
+    "author": "CARJAN Team",
+    "description": "A busy urban intersection with pedestrians, vehicles, and traffic management"
+  },
+  "environment": {
+    "map": "town03",
+    "weather": "Clear",
+    "category": "Urban",
+    "cameraPosition": "up"
+  },
+  "grid": {
+    "dimensions": {
+      "rows": 12,
+      "cols": 8
+    },
+    "cellSize": {
+      "width": 60,
+      "height": 50
+    },
+    "mapData": [
+      ["v", "v", "v", "r", "r", "v", "v", "v"],
+      ["v", "v", "v", "r", "r", "v", "v", "v"],
+      ["v", "v", "v", "r", "r", "v", "v", "v"],
+      ["r", "r", "r", "r", "r", "r", "r", "r"],
+      ["r", "r", "r", "r", "r", "r", "r", "r"],
+      ["r", "r", "r", "r", "r", "r", "r", "r"],
+      ["r", "r", "r", "r", "r", "r", "r", "r"],
+      ["v", "v", "v", "r", "r", "v", "v", "v"],
+      ["v", "v", "v", "r", "r", "v", "v", "v"],
+      ["v", "v", "v", "r", "r", "v", "v", "v"],
+      ["v", "v", "v", "r", "r", "v", "v", "v"],
+      ["v", "v", "v", "r", "r", "v", "v", "v"]
+    ]
+  },
+  "entities": [
+    {
+      "id": "vehicle_001",
+      "type": "vehicle",
+      "x": 3,
+      "y": 1,
+      "color": "#2196F3",
+      "heading": "East"
+    },
+    {
+      "id": "vehicle_002",
+      "type": "vehicle",
+      "x": 5,
+      "y": 6,
+      "color": "#F44336",
+      "heading": "West"
+    },
+    {
+      "id": "pedestrian_001",
+      "type": "pedestrian",
+      "x": 2,
+      "y": 3,
+      "color": "#4CAF50",
+      "heading": "South"
+    },
+    {
+      "id": "pedestrian_002",
+      "type": "pedestrian",
+      "x": 8,
+      "y": 4,
+      "color": "#FF9800",
+      "heading": "North"
+    }
+  ],
+  "paths": [
+    {
+      "id": "path_vehicle_east",
+      "color": "#2196F3",
+      "waypoints": [
+        {
+          "id": "wp_001",
+          "x": 3,
+          "y": 0,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "wp_002",
+          "x": 3,
+          "y": 3,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "wp_003",
+          "x": 3,
+          "y": 7,
+          "positionInCell": "middle-center"
+        }
+      ]
+    },
+    {
+      "id": "path_pedestrian_crossing",
+      "color": "#4CAF50",
+      "waypoints": [
+        {
+          "id": "wp_004",
+          "x": 0,
+          "y": 3,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "wp_005",
+          "x": 3,
+          "y": 3,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "wp_006",
+          "x": 6,
+          "y": 3,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "wp_007",
+          "x": 9,
+          "y": 3,
+          "positionInCell": "middle-center"
+        }
+      ]
+    }
+  ],
+  "waypoints": [
+    {
+      "id": "wp_001",
+      "x": 3,
+      "y": 0,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "wp_002",
+      "x": 3,
+      "y": 3,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "wp_003",
+      "x": 3,
+      "y": 7,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "wp_004",
+      "x": 0,
+      "y": 3,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "wp_005",
+      "x": 3,
+      "y": 3,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "wp_006",
+      "x": 6,
+      "y": 3,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "wp_007",
+      "x": 9,
+      "y": 3,
+      "positionInCell": "middle-center"
+    }
+  ],
+  "dboxes": [],
+  "settings": {
+    "showGrid": true,
+    "showPaths": true,
+    "showWaypoints": true,
+    "showEntities": true,
+    "showDBoxes": true
+  }
+}

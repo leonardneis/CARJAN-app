@@ -53,6 +53,14 @@
                   <span class="detail-label">Category:</span>
                   <span class="detail-value">{{ scenario.category }}</span>
                 </div>
+                <div class="detail-line" v-if="scenario.difficulty">
+                  <span class="detail-label">Difficulty:</span>
+                  <span
+                    class="detail-value difficulty"
+                    :class="'difficulty-' + scenario.difficulty"
+                    >{{ scenario.difficulty }}</span
+                  >
+                </div>
                 <div class="detail-line">
                   <span class="detail-label">Entities:</span>
                   <span class="detail-value">{{ scenario.entityCount }}</span>
@@ -157,6 +165,7 @@ import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
+import scenarioService from "../services/scenarioService.js";
 
 const router = useRouter();
 const toast = useToast();
@@ -166,97 +175,36 @@ const scenarios = ref([]);
 const selectedScenario = ref(null);
 const showDeleteDialog = ref(false);
 
-// Load scenarios from localStorage
+// Load scenarios using the central scenario service
 const loadScenarios = async () => {
   try {
-    const saved = localStorage.getItem("carjan-scenarios");
-    if (saved) {
-      scenarios.value = JSON.parse(saved);
-    }
+    // First try to load saved scenarios from localStorage
+    const saved = scenarioService.loadSavedScenarios();
 
-    // Add example scenarios if none exist
-    if (scenarios.value.length === 0) {
-      await loadExampleScenarios();
+    // If no saved scenarios exist, load from the central scenario system
+    if (saved.length === 0) {
+      const centralScenarios = await scenarioService.loadScenarios();
+      scenarios.value = centralScenarios;
+
+      // Save to localStorage for future use
+      if (centralScenarios.length > 0) {
+        scenarioService.saveScenarios(centralScenarios);
+      }
+    } else {
+      scenarios.value = saved;
+
+      // Check if we need to refresh from central system
+      // (for example, if scenarios were updated)
+      const centralScenarios = await scenarioService.loadScenarios();
+      if (centralScenarios.length > saved.length) {
+        scenarios.value = centralScenarios;
+        scenarioService.saveScenarios(centralScenarios);
+      }
     }
   } catch (error) {
     console.error("Error loading scenarios:", error);
     scenarios.value = [];
   }
-};
-
-const loadExampleScenarios = async () => {
-  try {
-    const exampleFiles = [
-      "highway-overtaking.json",
-      "parking-lot.json",
-      "urban-intersection.json",
-    ];
-
-    const loadedScenarios = [];
-
-    for (const filename of exampleFiles) {
-      try {
-        const response = await fetch(`/example-scenarios/${filename}`);
-        if (response.ok) {
-          const scenarioData = await response.json();
-
-          // Convert to our scenario format
-          const scenario = {
-            id: filename.replace(".json", ""),
-            name: scenarioData.metadata.name,
-            mapName: scenarioData.environment.map,
-            lastModified: scenarioData.metadata.modified,
-            entityCount: scenarioData.entities
-              ? scenarioData.entities.length
-              : 0,
-            pathCount: scenarioData.paths ? scenarioData.paths.length : 0,
-            waypointCount: scenarioData.waypoints
-              ? scenarioData.waypoints.length
-              : 0,
-            description: scenarioData.metadata.description,
-            category: scenarioData.environment.category,
-            author: scenarioData.metadata.author,
-            data: scenarioData, // Store the full scenario data
-          };
-
-          loadedScenarios.push(scenario);
-        }
-      } catch (fileError) {
-        console.warn(`Could not load ${filename}:`, fileError);
-      }
-    }
-
-    scenarios.value = loadedScenarios;
-    saveScenarios();
-  } catch (error) {
-    console.error("Error loading example scenarios:", error);
-    // Fallback to mock data if loading fails
-    scenarios.value = [
-      {
-        id: "demo_1",
-        name: "Highway Demo",
-        mapName: "Highway Straight",
-        lastModified: new Date(Date.now() - 86400000).toISOString(),
-        entityCount: 5,
-        pathCount: 2,
-        waypointCount: 8,
-      },
-      {
-        id: "demo_2",
-        name: "Urban Traffic",
-        mapName: "Urban Intersection",
-        lastModified: new Date(Date.now() - 172800000).toISOString(),
-        entityCount: 12,
-        pathCount: 4,
-        waypointCount: 15,
-      },
-    ];
-    saveScenarios();
-  }
-};
-
-const saveScenarios = () => {
-  localStorage.setItem("carjan-scenarios", JSON.stringify(scenarios.value));
 };
 
 const selectScenario = (scenario) => {
@@ -277,10 +225,7 @@ const playSelectedWorld = () => {
   router.push({
     name: "CarjanEditor",
     query: {
-      loadScenario: selectedScenario.value.id,
-      scenarioData: selectedScenario.value.data
-        ? JSON.stringify(selectedScenario.value.data)
-        : undefined,
+      scenario: selectedScenario.value.id,
     },
   });
 };
@@ -313,7 +258,7 @@ const confirmDelete = () => {
 };
 
 const goBack = () => {
-  router.push("/");
+  router.push("/main-menu");
 };
 
 const formatDate = (dateString) => {
@@ -342,12 +287,7 @@ const deleteScenario = (scenario) => {
 };
 
 const duplicateScenario = (scenario) => {
-  const newScenario = {
-    ...scenario,
-    id: `${scenario.id}_copy_${Date.now()}`,
-    name: `${scenario.name} (Copy)`,
-    lastModified: new Date().toISOString(),
-  };
+  const newScenario = scenarioService.duplicateScenario(scenario);
 
   scenarios.value.push(newScenario);
   saveScenarios();
@@ -358,6 +298,31 @@ const duplicateScenario = (scenario) => {
     detail: `${scenario.name} has been duplicated`,
     life: 3000,
   });
+};
+
+const refreshScenariosFromCentral = async () => {
+  try {
+    // Clear localStorage and reload from central system
+    localStorage.removeItem("carjan-scenarios");
+    const centralScenarios = await scenarioService.loadScenarios();
+    scenarios.value = centralScenarios;
+    scenarioService.saveScenarios(centralScenarios);
+
+    toast.add({
+      severity: "success",
+      summary: "Scenarios Refreshed",
+      detail: "Scenarios have been refreshed from the central system",
+      life: 3000,
+    });
+  } catch (error) {
+    console.error("Error refreshing scenarios:", error);
+    toast.add({
+      severity: "error",
+      summary: "Refresh Failed",
+      detail: "Failed to refresh scenarios",
+      life: 5000,
+    });
+  }
 };
 
 onMounted(async () => {
@@ -519,6 +484,23 @@ onMounted(async () => {
 
 .detail-value {
   color: rgba(255, 255, 255, 0.8);
+}
+
+.difficulty {
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.difficulty-easy {
+  color: #28a745 !important;
+}
+
+.difficulty-medium {
+  color: #ffc107 !important;
+}
+
+.difficulty-hard {
+  color: #dc3545 !important;
 }
 
 .selection-indicator {

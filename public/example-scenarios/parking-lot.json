@@ -1,0 +1,226 @@
+{
+  "metadata": {
+    "name": "Parking Lot Scenario",
+    "version": "1.0.0",
+    "created": "2025-06-26T10:30:00.000Z",
+    "modified": "2025-06-26T10:30:00.000Z",
+    "author": "CARJAN Team",
+    "description": "Vehicle parking maneuvers in a crowded parking lot with pedestrians"
+  },
+  "environment": {
+    "map": "parking-complex",
+    "weather": "Clear",
+    "category": "Parking",
+    "cameraPosition": "up"
+  },
+  "grid": {
+    "dimensions": {
+      "rows": 12,
+      "cols": 8
+    },
+    "cellSize": {
+      "width": 60,
+      "height": 50
+    },
+    "mapData": [
+      ["v", "v", "v", "v", "v", "v", "v", "v"],
+      ["v", "p", "p", "p", "p", "p", "p", "v"],
+      ["v", "p", "v", "p", "v", "p", "v", "v"],
+      ["v", "p", "v", "p", "v", "p", "v", "v"],
+      ["v", "p", "p", "p", "p", "p", "p", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "r", "r", "r", "r", "r", "r", "v"],
+      ["v", "p", "p", "p", "p", "p", "p", "v"],
+      ["v", "p", "v", "p", "v", "p", "v", "v"],
+      ["v", "p", "v", "p", "v", "p", "v", "v"],
+      ["v", "p", "p", "p", "p", "p", "p", "v"],
+      ["v", "v", "v", "v", "v", "v", "v", "v"]
+    ]
+  },
+  "entities": [
+    {
+      "id": "parking_car",
+      "type": "vehicle",
+      "x": 5,
+      "y": 2,
+      "color": "#2196F3",
+      "heading": "North"
+    },
+    {
+      "id": "parked_car_1",
+      "type": "vehicle",
+      "x": 2,
+      "y": 2,
+      "color": "#757575",
+      "heading": "North"
+    },
+    {
+      "id": "parked_car_2",
+      "type": "vehicle",
+      "x": 2,
+      "y": 4,
+      "color": "#757575",
+      "heading": "North"
+    },
+    {
+      "id": "parked_car_3",
+      "type": "vehicle",
+      "x": 8,
+      "y": 2,
+      "color": "#757575",
+      "heading": "North"
+    },
+    {
+      "id": "pedestrian_shopper",
+      "type": "pedestrian",
+      "x": 7,
+      "y": 3,
+      "color": "#4CAF50",
+      "heading": "West"
+    }
+  ],
+  "paths": [
+    {
+      "id": "parking_maneuver",
+      "color": "#2196F3",
+      "waypoints": [
+        {
+          "id": "park_wp_001",
+          "x": 5,
+          "y": 1,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "park_wp_002",
+          "x": 5,
+          "y": 3,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "park_wp_003",
+          "x": 4,
+          "y": 3,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "park_wp_004",
+          "x": 3,
+          "y": 3,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "park_wp_005",
+          "x": 2,
+          "y": 3,
+          "positionInCell": "middle-center"
+        }
+      ]
+    },
+    {
+      "id": "pedestrian_path",
+      "color": "#4CAF50",
+      "waypoints": [
+        {
+          "id": "ped_wp_001",
+          "x": 7,
+          "y": 6,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "ped_wp_002",
+          "x": 7,
+          "y": 4,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "ped_wp_003",
+          "x": 7,
+          "y": 2,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "ped_wp_004",
+          "x": 4,
+          "y": 2,
+          "positionInCell": "middle-center"
+        },
+        {
+          "id": "ped_wp_005",
+          "x": 1,
+          "y": 2,
+          "positionInCell": "middle-center"
+        }
+      ]
+    }
+  ],
+  "waypoints": [
+    {
+      "id": "park_wp_001",
+      "x": 5,
+      "y": 1,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "park_wp_002",
+      "x": 5,
+      "y": 3,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "park_wp_003",
+      "x": 4,
+      "y": 3,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "park_wp_004",
+      "x": 3,
+      "y": 3,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "park_wp_005",
+      "x": 2,
+      "y": 3,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "ped_wp_001",
+      "x": 7,
+      "y": 6,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "ped_wp_002",
+      "x": 7,
+      "y": 4,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "ped_wp_003",
+      "x": 7,
+      "y": 2,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "ped_wp_004",
+      "x": 4,
+      "y": 2,
+      "positionInCell": "middle-center"
+    },
+    {
+      "id": "ped_wp_005",
+      "x": 1,
+      "y": 2,
+      "positionInCell": "middle-center"
+    }
+  ],
+  "dboxes": [],
+  "settings": {
+    "showGrid": true,
+    "showPaths": true,
+    "showWaypoints": true,
+    "showEntities": true,
+    "showDBoxes": true
+  }
+}

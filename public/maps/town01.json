@@ -1,0 +1,19 @@
+{
+  "id": "town01",
+  "name": "Town01 - Basic Urban",
+  "category": "Urban",
+  "description": "A basic urban environment with intersections and streets",
+  "grid": {
+    "dimensions": { "rows": 8, "cols": 8 },
+    "mapData": [
+      ["g", "g", "r", "r", "r", "g", "g", "g"],
+      ["g", "g", "r", "b", "r", "g", "g", "g"],
+      ["r", "r", "r", "r", "r", "r", "r", "r"],
+      ["r", "b", "r", "r", "r", "b", "r", "r"],
+      ["r", "r", "r", "r", "r", "r", "r", "r"],
+      ["g", "g", "r", "b", "r", "g", "g", "g"],
+      ["g", "g", "r", "r", "r", "g", "g", "g"],
+      ["g", "g", "g", "g", "g", "g", "g", "g"]
+    ]
+  }
+}

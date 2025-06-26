@@ -32,5 +32,3 @@ reference/
 # Environment
 .env
 
-# Example scenarios (not for version control)
-example-scenarios/

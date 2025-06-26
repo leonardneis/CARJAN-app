@@ -2,40 +2,21 @@
   "id": "highway-straight",
   "name": "Highway Straight",
   "description": "A straight highway section perfect for overtaking scenarios",
-  "category": "Highway",
-  "size": {
-    "rows": 12,
-    "cols": 8
-  },
-  "thumbnail": "/maps/thumbnails/highway-straight.png",
-  "difficulty": "Easy",
-  "recommendedEntities": ["vehicle", "autonomous"],
-  "spawnPoints": [
-    { "x": 5, "y": 1, "type": "vehicle" },
-    { "x": 6, "y": 1, "type": "autonomous" }
-  ],
-  "mapData": [
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"],
-    ["v", "v", "p", "r", "r", "p", "v", "v"]
-  ],
-  "legend": {
-    "v": "void",
-    "r": "road",
-    "p": "path/sidewalk"
-  },
-  "metadata": {
-    "created": "2025-06-26",
-    "version": "1.0",
-    "author": "CARJAN Default Maps"
+  "grid": {
+    "dimensions": { "rows": 12, "cols": 8 },
+    "mapData": [
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"],
+      ["v", "v", "p", "r", "r", "p", "v", "v"]
+    ]
   }
 }

@@ -9,8 +9,8 @@ import ScenarioSelection from "./views/ScenarioSelection.vue";
 import Settings from "./views/Settings.vue";
 
 const routes = [
-  { path: "/splash", name: "Splash", component: Splash },
-  { path: "/", name: "MainMenu", component: MainMenu },
+  { path: "/", name: "Splash", component: Splash },
+  { path: "/main-menu", name: "MainMenu", component: MainMenu },
   { path: "/dashboard", name: "Dashboard", component: Dashboard },
   {
     path: "/scenario-selection",

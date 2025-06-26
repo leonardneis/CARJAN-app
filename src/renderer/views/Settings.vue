@@ -182,7 +182,7 @@ const resetToDefaults = () => {
 };
 
 const goBack = () => {
-  router.push("/");
+  router.push("/main-menu");
 };
 
 onMounted(() => {

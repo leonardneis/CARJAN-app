@@ -285,87 +285,53 @@ const loadSampleScenarioData = () => {
 };
 
 // Helper method to load scenario data from route query
-const loadScenarioFromQuery = () => {
+const loadScenarioFromQuery = async () => {
   try {
-    const scenarioId = route.query.loadScenario;
-    const scenarioDataString = route.query.scenarioData;
+    const scenarioId = route.query.scenario;
 
-    if (scenarioDataString) {
-      const scenarioData = JSON.parse(scenarioDataString);
+    if (scenarioId) {
+      // Load scenario from scenarioService
+      const { scenarioService } = await import(
+        "../services/scenarioService.js"
+      );
 
-      // Load scenario metadata
-      if (scenarioData.metadata) {
-        gridStore.scenarioName =
-          scenarioData.metadata.name || "Loaded Scenario";
+      // Make sure scenarios are loaded
+      await scenarioService.loadScenarios();
+
+      // Get the scenario
+      const scenario = scenarioService.getScenario(scenarioId);
+
+      if (scenario && scenario.data) {
+        // Use the existing setScenario method which now loads the map automatically
+        await gridStore.setScenario({
+          scenarioName: `scenario#${scenario.name}`,
+          scenarioMap: scenario.mapName,
+          weather: scenario.data.environment?.weather || "Clear",
+          category: scenario.data.environment?.category || "Urban",
+          cameraPosition: scenario.data.environment?.cameraPosition || "up",
+          entities: scenario.data.entities || [],
+          waypoints: scenario.data.waypoints || [],
+          paths: scenario.data.paths || [],
+          dboxes: scenario.data.dboxes || [],
+        });
+
+        toast.add({
+          severity: "success",
+          summary: "Scenario Loaded",
+          detail: `${scenario.name} has been loaded successfully`,
+          life: 3000,
+        });
+      } else {
+        console.warn(`Scenario not found: ${scenarioId}`);
+        toast.add({
+          severity: "warn",
+          summary: "Scenario Not Found",
+          detail: `Could not find scenario: ${scenarioId}`,
+          life: 5000,
+        });
       }
-
-      // Load environment settings
-      if (scenarioData.environment) {
-        gridStore.mapName = scenarioData.environment.map || "Town01";
-        gridStore.weather = scenarioData.environment.weather || "Clear";
-        gridStore.category = scenarioData.environment.category || "Urban";
-        gridStore.cameraPosition =
-          scenarioData.environment.cameraPosition || "up";
-      }
-
-      // Load grid configuration
-      if (scenarioData.grid) {
-        if (scenarioData.grid.dimensions) {
-          gridStore.gridConfig.rows = scenarioData.grid.dimensions.rows || 12;
-          gridStore.gridConfig.cols = scenarioData.grid.dimensions.cols || 8;
-        }
-        if (scenarioData.grid.cellSize) {
-          gridStore.gridConfig.cellWidth =
-            scenarioData.grid.cellSize.width || 60;
-          gridStore.gridConfig.cellHeight =
-            scenarioData.grid.cellSize.height || 50;
-        }
-      }
-
-      // Load entities
-      if (scenarioData.entities && Array.isArray(scenarioData.entities)) {
-        gridStore.entities = scenarioData.entities.map((entity) => ({
-          id: entity.id,
-          type: entity.type,
-          position: { x: entity.x, y: entity.y },
-          rotation: 0, // Default rotation
-          model:
-            entity.type === "vehicle"
-              ? "vehicle.audi.a2"
-              : "walker.pedestrian.0001",
-          color: entity.color || "#4CAF50",
-        }));
-      }
-
-      // Load waypoints
-      if (scenarioData.waypoints && Array.isArray(scenarioData.waypoints)) {
-        gridStore.waypoints = scenarioData.waypoints.map((wp) => ({
-          id: wp.id,
-          position: { x: wp.x, y: wp.y },
-          positionInCell: wp.positionInCell || "middle-center",
-        }));
-      }
-
-      // Load paths
-      if (scenarioData.paths && Array.isArray(scenarioData.paths)) {
-        gridStore.paths = scenarioData.paths.map((path) => ({
-          id: path.id,
-          waypoints: path.waypoints?.map((wp) => wp.id) || [],
-          color: path.color || "#4CAF50",
-        }));
-      }
-
-      // Reinitialize grid with new data
-      gridStore.initializeGrid();
-
-      toast.add({
-        severity: "success",
-        summary: "Scenario Loaded",
-        detail: `${gridStore.scenarioName} has been loaded successfully`,
-        life: 3000,
-      });
     } else {
-      console.warn("No scenario data found in query parameters");
+      console.warn("No scenario ID found in query parameters");
     }
   } catch (error) {
     console.error("Error loading scenario from query:", error);
@@ -381,6 +347,7 @@ const loadScenarioFromQuery = () => {
 // Lifecycle
 onMounted(async () => {
   try {
+    // Initialize grid first
     gridStore.initializeGrid();
 
     // Set some default values
@@ -392,8 +359,8 @@ onMounted(async () => {
     // Check if we should load a sample scenario or a specific scenario
     if (route.query.loadSample === "true") {
       loadSampleScenarioData();
-    } else if (route.query.loadScenario) {
-      loadScenarioFromQuery();
+    } else if (route.query.scenario) {
+      await loadScenarioFromQuery();
     }
 
     toast.add({
@@ -497,7 +464,7 @@ const handleQuitEditor = () => {
     acceptClass: "p-button-danger",
     accept: () => {
       // Navigate back to main menu
-      router.push("/");
+      router.push("/main-menu");
     },
   });
 };
