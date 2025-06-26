@@ -1,4 +1,8 @@
-import { createRouter, createWebHistory } from "vue-router";
+import {
+  createRouter,
+  createWebHistory,
+  createWebHashHistory,
+} from "vue-router";
 import Splash from "./views/Splash.vue";
 import LandingPage from "./views/LandingPage.vue";
 import Dashboard from "./views/Dashboard.vue";
@@ -21,11 +25,28 @@ const routes = [
   { path: "/carjan", name: "CarjanEditor", component: CarjanEditor },
   { path: "/scenarios", name: "ScenarioManager", component: ScenarioManager },
   { path: "/settings", name: "Settings", component: Settings },
+  // Fallback route - redirect any unknown paths to splash
+  { path: "/:pathMatch(.*)*", redirect: "/" },
 ];
 
+// Check if running in Electron
+const isElectron =
+  typeof window !== "undefined" && window.electronAPI?.isElectron;
+
 const router = createRouter({
-  history: createWebHistory(),
+  // Use hash history for Electron, web history for browser
+  history: isElectron
+    ? createWebHashHistory()
+    : createWebHistory(import.meta.env.BASE_URL),
   routes,
+});
+
+// Enhanced navigation logging
+router.beforeEach((to, from, next) => {
+  if (isElectron) {
+    console.log("Electron navigation:", from.path, "->", to.path);
+  }
+  next();
 });
 
 export default router;

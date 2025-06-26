@@ -16,6 +16,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   readFile: (filePath) => ipcRenderer.invoke("read-file", filePath),
   fileExists: (filePath) => ipcRenderer.invoke("file-exists", filePath),
 
-  // App info
+  // App operations
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
+  closeApp: () => ipcRenderer.invoke("close-app"),
+
+  // Platform info
+  platform: process.platform,
+  isElectron: true,
 });

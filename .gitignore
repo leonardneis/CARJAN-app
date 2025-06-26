@@ -2,6 +2,7 @@
 node_modules/
 npm-debug.log*
 *.log
+package-lock.json
 
 # Vite
 dist/
@@ -11,6 +12,7 @@ dist/
 # Electron output
 out/
 build/
+dist-electron/
 
 # System
 .DS_Store
@@ -28,7 +30,9 @@ reference/
 # OS/Exec
 *.exe
 *.bat
+*.sh
 
 # Environment
 .env
+.env.example
 
