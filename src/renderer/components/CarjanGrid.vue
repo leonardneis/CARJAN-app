@@ -395,7 +395,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, Transition } from "vue";
 import { useGridStore } from "../store/grid";
-import { motion } from "motion-v";
+import { motion, animate } from "motion-v";
 import Button from "primevue/button";
 import Badge from "primevue/badge";
 import ProgressSpinner from "primevue/progressspinner";
@@ -678,7 +678,7 @@ const handleCellClick = (cell) => {
     `.grid-cell[data-row="${cell.row}"][data-col="${cell.col}"]`
   );
   if (cellElement) {
-    motion.animate(
+    animate(
       cellElement,
       { scale: [1, 1.1, 1] },
       { duration: 0.3, easing: "easeOut" }
@@ -697,9 +697,9 @@ const handleCellHover = (cell, isEntering) => {
       hoveredCell.value = { x: cell.row, y: cell.col };
       emit("cell-hovered", { x: cell.col, y: cell.row }); // X=col, Y=row for correct orientation
 
-      motion.animate(
+      animate(
         cellElement,
-        { scale: 1.05, y: -2 },
+        { scale: 1.04, y: -1 },
         { duration: 0.2, easing: "easeOut" }
       );
     } else {
@@ -707,7 +707,7 @@ const handleCellHover = (cell, isEntering) => {
       hoveredCell.value = { x: null, y: null };
       emit("cell-hovered", null);
 
-      motion.animate(
+      animate(
         cellElement,
         { scale: 1, y: 0 },
         { duration: 0.2, easing: "easeOut" }
@@ -1211,8 +1211,9 @@ watch(isSpacePressed, (newValue) => {
 }
 
 .grid-cell:hover {
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3),
+    0 0 16px rgba(255, 255, 255, 0.1);
 }
 
 .cell-void {

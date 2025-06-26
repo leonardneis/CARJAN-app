@@ -23,22 +23,38 @@
 
       <!-- Active Tab Indicator -->
       <motion.div
-        v-if="indicatorStyle"
+        v-if="indicatorStyle && indicatorStyle.width !== '0px'"
         class="tab-indicator"
-        :initial="{ opacity: 0, scale: 0.8 }"
+        :initial="
+          isInitialLoad
+            ? {
+                left: indicatorStyle.left,
+                width: indicatorStyle.width,
+                height: indicatorStyle.height,
+                opacity: 1,
+                scale: 1,
+              }
+            : false
+        "
         :animate="{
-          ...indicatorStyle,
+          left: indicatorStyle.left,
+          width: indicatorStyle.width,
+          height: indicatorStyle.height,
           opacity: 1,
           scale: 1,
         }"
-        :transition="{
-          type: 'spring',
-          stiffness: 400,
-          damping: 30,
-          mass: 0.6,
-          opacity: { duration: 0.2 },
-          scale: { duration: 0.2 },
-        }"
+        :transition="
+          isInitialLoad
+            ? false
+            : {
+                type: 'spring',
+                stiffness: 400,
+                damping: 30,
+                mass: 0.6,
+                opacity: { duration: 0.2 },
+                scale: { duration: 0.2 },
+              }
+        "
       />
     </div>
 
@@ -105,6 +121,7 @@ const indicatorStyle = ref({
   height: "0px",
 });
 const isAnimating = ref(false);
+const isInitialLoad = ref(true);
 
 // Initialize active tab
 onMounted(() => {
@@ -149,6 +166,13 @@ const updateIndicator = () => {
     width: `${buttonRect.width}px`,
     height: `${buttonRect.height}px`,
   };
+
+  // Set isInitialLoad to false after first update
+  if (isInitialLoad.value) {
+    nextTick(() => {
+      isInitialLoad.value = false;
+    });
+  }
 };
 
 // Set active tab
@@ -162,11 +186,11 @@ const setActiveTab = (index) => {
     isAnimating.value = true;
     activeTabIndex.value = index;
 
-    // Reset animation flag after longer transition (to account for slow entrance)
+    // Reset animation flag after shorter transition to allow faster switching
     setTimeout(() => {
       isAnimating.value = false;
       updateIndicator();
-    }, 900);
+    }, 300); // Reduced from 900ms to 300ms for faster tab switching
   }
 };
 
@@ -294,38 +318,38 @@ const getTabTransition = (tabIndex) => {
     tabIndex <= Math.max(activeTabIndex.value, previousTabIndex.value);
 
   if (isActive) {
-    // Active tab: slow, smooth entrance with ease-out
+    // Active tab: faster, smooth entrance with ease-out
     return {
-      duration: 0.8, // Longer duration for smooth entrance
+      duration: 0.4, // Reduced from 0.8s to 0.4s for faster switching
       ease: [0.16, 1, 0.3, 1], // Strong ease-out for gentle deceleration
       x: {
-        duration: 0.8,
+        duration: 0.4, // Faster horizontal movement
         ease: [0.16, 1, 0.3, 1], // Smooth horizontal movement
       },
       opacity: {
-        duration: 0.6, // Fade in over 0.6s
+        duration: 0.3, // Faster fade in
         ease: [0.4, 0, 0.2, 1], // Gentle opacity transition
       },
       filter: {
-        duration: 0.7, // Blur clears over 0.7s
+        duration: 0.35, // Faster blur clear
         ease: [0.4, 0, 0.2, 1], // Gentle blur out
       },
     };
   } else if (wasPrevious && isAnimating.value) {
-    // Previous tab: quick exit
+    // Previous tab: faster exit
     return {
-      duration: 0.3, // Fast exit
+      duration: 0.2, // Faster exit (reduced from 0.3s)
       ease: [0.55, 0.085, 0.68, 0.53], // Sharp ease-in for quick departure
       x: {
-        duration: 0.3,
+        duration: 0.2, // Faster horizontal movement
         ease: [0.55, 0.085, 0.68, 0.53], // Quick horizontal movement
       },
       opacity: {
-        duration: 0.2, // Quick fade out
+        duration: 0.15, // Faster fade out
         ease: [0.55, 0.085, 0.68, 0.53],
       },
       filter: {
-        duration: 0.15, // Very quick blur
+        duration: 0.1, // Very quick blur
         ease: [0.55, 0.085, 0.68, 0.53],
       },
     };
@@ -334,23 +358,23 @@ const getTabTransition = (tabIndex) => {
     isAnimating.value &&
     tabIndex !== activeTabIndex.value
   ) {
-    // Intermediate tabs in carousel: quick sweep
-    const sweepDelay = distanceFromPrevious * 0.03; // Small stagger
+    // Intermediate tabs in carousel: faster sweep
+    const sweepDelay = distanceFromPrevious * 0.02; // Smaller stagger for faster switching
     return {
-      duration: 0.25, // Very fast sweep
+      duration: 0.15, // Faster sweep (reduced from 0.25s)
       delay: sweepDelay,
       ease: [0.76, 0, 0.24, 1], // Quick ease for sweep effect
       x: {
-        duration: 0.25,
+        duration: 0.15, // Faster horizontal sweep
         ease: [0.76, 0, 0.24, 1],
       },
       opacity: {
-        duration: 0.2,
+        duration: 0.12, // Faster opacity change
         delay: sweepDelay,
         ease: [0.76, 0, 0.24, 1],
       },
       filter: {
-        duration: 0.15,
+        duration: 0.1, // Faster blur change
         delay: sweepDelay,
         ease: [0.76, 0, 0.24, 1],
       },
