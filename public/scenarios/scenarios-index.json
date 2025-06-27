@@ -1,0 +1,33 @@
+{
+  "scenarios": [
+    {
+      "id": "interactive-01",
+      "name": "Interactive 01",
+      "category": "CARLA-ICTS",
+      "map": "carjan-map01",
+      "file": "interactive-01.json",
+      "description": "CARLA-ICTS benchmark scenario with multiple vehicles, pedestrian, and waypoints",
+      "difficulty": "medium",
+      "duration": "5-10 minutes",
+      "tags": ["benchmark", "CARLA-ICTS", "multi-agent", "waypoints"]
+    },
+    {
+      "id": "example-demo",
+      "name": "Example Demo",
+      "category": "Demo",
+      "map": "town01",
+      "file": "example-demo.json",
+      "description": "Demo scenario showcasing CARJAN features",
+      "difficulty": "easy",
+      "duration": "3-5 minutes",
+      "tags": ["demo", "example", "basic"]
+    }
+  ],
+  "categories": [
+    {
+      "id": "carla-icts",
+      "name": "CARLA-ICTS",
+      "description": "CARLA-ICTS benchmark scenarios for autonomous vehicle testing"
+    }
+  ]
+}

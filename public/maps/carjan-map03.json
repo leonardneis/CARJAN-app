@@ -1,0 +1,39 @@
+{
+  "id": "carjan-map03",
+  "name": "CARJAN Map 03",
+  "description": "CARJAN map with full crossroads intersection",
+  "grid": {
+    "dimensions": { "rows": 12, "cols": 8 },
+    "mapData": [
+      ["v", "v", "s", "r", "r", "s", "v", "v"],
+      ["v", "v", "s", "r", "r", "s", "v", "v"],
+      ["v", "v", "s", "r", "r", "s", "v", "v"],
+      ["s", "s", "s", "r", "r", "s", "s", "s"],
+      ["r", "r", "r", "r", "r", "r", "r", "r"],
+      ["r", "r", "r", "r", "r", "r", "r", "r"],
+      ["r", "r", "r", "r", "r", "r", "r", "r"],
+      ["s", "s", "s", "r", "r", "s", "s", "s"],
+      ["v", "v", "s", "r", "r", "s", "v", "v"],
+      ["v", "v", "s", "r", "r", "s", "v", "v"],
+      ["v", "v", "s", "r", "r", "s", "v", "v"],
+      ["v", "v", "s", "r", "r", "s", "v", "v"]
+    ]
+  },
+  "legend": {
+    "v": {
+      "name": "Void",
+      "color": "#2D2D2D",
+      "description": "Non-traversable void area"
+    },
+    "r": {
+      "name": "Road",
+      "color": "#A8E6CF",
+      "description": "Drivable road surface"
+    },
+    "s": {
+      "name": "Sidewalk",
+      "color": "#B8D8F0",
+      "description": "Walkable sidewalk area"
+    }
+  }
+}

@@ -137,7 +137,7 @@ const warpOverlayMessage = ref("");
 
 const connectionStatus = computed(() => {
   return connected.value
-    ? { text: "Connected to CARLA", class: "status-connected" }
+    ? { text: "Connected", class: "status-connected" }
     : { text: "Disconnected", class: "status-disconnected" };
 });
 

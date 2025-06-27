@@ -19,20 +19,12 @@
               />
             </template>
 
-            <template #maps>
-              <CarjanMaps @map-selected="handleMapSelected" />
-            </template>
-
             <template #entities>
               <CarjanEntities @entity-drag-start="handleEntityDragStart" />
             </template>
 
             <template #tools>
               <CarjanTools @mode-change="handleModeChange" />
-            </template>
-
-            <template #carla>
-              <CarjanCarla @export-scenario="handleExportScenario" />
             </template>
           </SmoothTabs>
         </div>
@@ -157,13 +149,13 @@
           <i class="pi pi-search-plus"></i>
           <span>{{ Math.round(gridStore.scale * 100) }}%</span>
         </div>
-        <div v-if="hoveredCell" class="status-item">
+        <div v-if="hoveredCell" class="status-item coordinates">
           <i class="pi pi-crosshairs"></i>
-          <span>Row: {{ hoveredCell.y }}, Col: {{ hoveredCell.x }},</span>
+          <span>Row: {{ hoveredCell.y }}, Col: {{ hoveredCell.x }}</span>
         </div>
-        <div v-else class="status-item">
+        <div v-else class="status-item coordinates">
           <i class="pi pi-crosshairs"></i>
-          <span>Row: -, Col : -</span>
+          <span>Row: -, Col: -</span>
         </div>
         <div class="status-item">
           <i class="pi pi-users"></i>
@@ -181,7 +173,7 @@
     </div>
 
     <!-- Notifications -->
-    <Toast position="bottom-right" />
+    <Toast position="bottom-right" style="bottom: 50px; z-index: 1100" />
 
     <!-- Confirmation Dialogs -->
     <ConfirmDialog />
@@ -191,6 +183,7 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
+import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useGridStore } from "../store/grid";
@@ -210,15 +203,14 @@ import ConfirmDialog from "primevue/confirmdialog";
 import CarjanGrid from "../components/CarjanGrid.vue";
 import CarjanProperties from "../components/CarjanProperties.vue";
 import CarjanImport from "../components/CarjanImport.vue";
-import CarjanMaps from "../components/CarjanMaps.vue";
 import CarjanEntities from "../components/CarjanEntities.vue";
 import CarjanTools from "../components/CarjanTools.vue";
-import CarjanCarla from "../components/CarjanCarla.vue";
 import SmoothTabs from "../components/SmoothTabs.vue";
 
 // Store and utilities
 const gridStore = useGridStore();
 const route = useRoute();
+const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
 
@@ -236,13 +228,8 @@ const availableModes = [
 const leftPanelTabs = [
   {
     id: "files",
-    title: "Files",
+    title: "General",
     icon: "pi pi-folder",
-  },
-  {
-    id: "maps",
-    title: "Maps",
-    icon: "pi pi-map",
   },
   {
     id: "entities",
@@ -253,11 +240,6 @@ const leftPanelTabs = [
     id: "tools",
     title: "Tools",
     icon: "pi pi-wrench",
-  },
-  {
-    id: "carla",
-    title: "CARLA",
-    icon: "pi pi-cog",
   },
 ];
 
@@ -302,20 +284,91 @@ const loadSampleScenarioData = () => {
   ];
 };
 
+// Helper method to load scenario data from route query
+const loadScenarioFromQuery = async () => {
+  try {
+    const scenarioId = route.query.scenario;
+
+    if (scenarioId) {
+      // Load scenario from scenarioService
+      const { scenarioService } = await import(
+        "../services/scenarioService.js"
+      );
+
+      // Make sure scenarios are loaded
+      await scenarioService.loadScenarios();
+
+      // Get the scenario
+      const scenario = scenarioService.getScenario(scenarioId);
+
+      if (scenario && scenario.data) {
+        // Use the existing setScenario method which now loads the map automatically
+        await gridStore.setScenario({
+          scenarioName: `scenario#${scenario.name}`,
+          scenarioMap: scenario.mapName,
+          weather: scenario.data.environment?.weather || "Clear",
+          category: scenario.data.environment?.category || "Urban",
+          cameraPosition: scenario.data.environment?.cameraPosition || "up",
+          entities: scenario.data.entities || [],
+          waypoints: scenario.data.waypoints || [],
+          paths: scenario.data.paths || [],
+          dboxes: scenario.data.dboxes || [],
+        });
+
+        toast.add({
+          severity: "success",
+          summary: "Scenario Loaded",
+          detail: `${scenario.name} has been loaded successfully`,
+          life: 3000,
+        });
+      } else {
+        console.warn(`Scenario not found: ${scenarioId}`);
+        toast.add({
+          severity: "warn",
+          summary: "Scenario Not Found",
+          detail: `Could not find scenario: ${scenarioId}`,
+          life: 5000,
+        });
+      }
+    } else {
+      console.warn("No scenario ID found in query parameters");
+    }
+  } catch (error) {
+    console.error("Error loading scenario from query:", error);
+    toast.add({
+      severity: "error",
+      summary: "Loading Error",
+      detail: "Failed to load the selected scenario",
+      life: 5000,
+    });
+  }
+};
+
 // Lifecycle
 onMounted(async () => {
   try {
+    // Initialize grid first
     gridStore.initializeGrid();
 
-    // Set some default values
-    gridStore.scenarioName = "New Scenario";
-    gridStore.weather = "Clear";
-    gridStore.category = "Urban";
-    gridStore.cameraPosition = "up";
+    // Set default values only if they're not already set
+    if (!gridStore.scenarioName) {
+      gridStore.scenarioName = "New Scenario";
+    }
+    if (!gridStore.weather) {
+      gridStore.weather = "Clear";
+    }
+    if (!gridStore.category) {
+      gridStore.category = "Urban";
+    }
+    if (!gridStore.cameraPosition) {
+      gridStore.cameraPosition = "up";
+    }
 
-    // Check if we should load a sample scenario
+    // Check if we should load a sample scenario or a specific scenario
     if (route.query.loadSample === "true") {
       loadSampleScenarioData();
+    } else if (route.query.scenario) {
+      await loadScenarioFromQuery();
     }
 
     toast.add({
@@ -418,8 +471,8 @@ const handleQuitEditor = () => {
     icon: "pi pi-question-circle",
     acceptClass: "p-button-danger",
     accept: () => {
-      // Navigate back or close editor
-      window.history.back();
+      // Navigate back to main menu
+      router.push("/main-menu");
     },
   });
 };
@@ -442,16 +495,6 @@ const handleScenarioLoaded = (scenario) => {
     summary: "Scenario Loaded",
     detail: `Scenario "${scenario.scenarioName}" has been loaded`,
     life: 3000,
-  });
-};
-
-const handleMapSelected = (mapName) => {
-  gridStore.mapName = mapName;
-  toast.add({
-    severity: "info",
-    summary: "Map Selected",
-    detail: `Selected map: ${mapName}`,
-    life: 2000,
   });
 };
 
@@ -851,6 +894,10 @@ watch(
   align-items: center;
   gap: 0.25rem;
   color: rgba(255, 255, 255, 0.8);
+}
+
+.status-item.coordinates {
+  min-width: 120px;
 }
 
 .status-item i {

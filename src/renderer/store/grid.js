@@ -47,19 +47,24 @@ export const useGridStore = defineStore("grid", {
 
     // UI state
     loading: false,
+    mapAnimating: false,
     propertyPanel: "scenario",
     currentCellPosition: [],
     currentCellStatus: null,
 
-    // Colors
+    // Colors - Modern palette with better contrast and readability
     colors: {
-      road: "#4CAF50", // Green for roads
-      path: "#2196F3", // Blue for paths
-      void: "#333333", // Dark gray for void
-      entity: "#FF9800", // Orange for entities
-      waypoint: "#9C27B0", // Purple for waypoints
-      path_selected: "#E91E63", // Pink for selected path
+      road: "#6B9BD9", // Clear blue for roads
+      sidewalk: "#95A5C6", // Muted blue-gray for sidewalks
+      path: "#95A5C6", // Legacy support - same as sidewalk
+      void: "#1a1a1a", // Dark charcoal for void
+      entity: "#FF5722", // Orange-red for entities
+      waypoint: "#FFD700", // Gold for waypoints
+      path_selected: "#FF00FF", // Magenta for selected path
     },
+
+    // Change tracking for auto-save
+    _isInitialized: false,
   }),
 
   getters: {
@@ -74,7 +79,8 @@ export const useGridStore = defineStore("grid", {
       if (mapData && mapData[row] && mapData[row][col]) {
         const cellType = mapData[row][col];
         if (cellType === "r") return state.colors.road;
-        if (cellType === "p") return state.colors.path;
+        if (cellType === "s") return state.colors.sidewalk;
+        if (cellType === "p") return state.colors.path; // Legacy support
       }
       return state.colors.void;
     },
@@ -106,6 +112,53 @@ export const useGridStore = defineStore("grid", {
           waypoint.y < state.gridCols
       );
     },
+
+    // Export scenario data for saving
+    scenarioData: (state) => ({
+      metadata: {
+        // Will be provided by scenarioStore
+      },
+      environment: {
+        map: state.mapName,
+        weather: state.weather,
+        category: state.category,
+        cameraPosition: state.cameraPosition,
+      },
+      grid: {
+        dimensions: {
+          rows: state.gridRows,
+          cols: state.gridCols,
+        },
+        cellSize: {
+          width: state.cellWidth,
+          height: state.cellHeight,
+        },
+        mapData: state.mapData,
+      },
+      entities: state.entities.map((entity) => ({
+        ...entity,
+        timestamp: new Date(),
+      })),
+      paths: state.paths.map((path) => ({
+        ...path,
+        timestamp: new Date(),
+      })),
+      waypoints: state.waypoints.map((waypoint) => ({
+        ...waypoint,
+        timestamp: new Date(),
+      })),
+      dboxes: state.dboxes.map((dbox) => ({
+        ...dbox,
+        timestamp: new Date(),
+      })),
+      settings: {
+        showGrid: state.showGrid,
+        showPaths: state.showPaths,
+        showWaypoints: state.showWaypoints,
+        showEntities: state.showEntities,
+        showDBoxes: state.showDBoxes,
+      },
+    }),
   },
 
   actions: {
@@ -128,11 +181,64 @@ export const useGridStore = defineStore("grid", {
 
       this.gridCells = cells;
       this.gridStatus = status;
+
+      // Set up change tracking after initialization
+      this._setupChangeTracking();
+      this._isInitialized = true;
+    },
+
+    // Setup change tracking for auto-save
+    async _setupChangeTracking() {
+      // Import scenarioStore within action to avoid circular dependencies
+      const { useScenarioStore } = await import("./scenario.js");
+
+      // Watch for changes in critical data
+      this.$subscribe((mutation, state) => {
+        if (!this._isInitialized) return;
+
+        const scenarioStore = useScenarioStore();
+        const changeType = mutation.type;
+        const payload = mutation.payload;
+
+        // Mark scenario as dirty on any change
+        scenarioStore.markDirty();
+
+        // Stream change if live streaming is enabled
+        scenarioStore.streamChange(changeType, {
+          storeId: mutation.storeId,
+          payload: payload,
+          timestamp: new Date(),
+        });
+      });
     },
 
     // Set map data and update grid
-    setMapData(mapData) {
-      this.mapData = mapData;
+    setMapData(mapInfo) {
+      // Handle both old format (direct map data) and new format (map object with grid)
+      if (mapInfo && mapInfo.grid) {
+        // New format with dimensions
+        this.mapData = mapInfo.grid.mapData;
+        this.gridRows = mapInfo.grid.dimensions.rows;
+        this.gridCols = mapInfo.grid.dimensions.cols;
+
+        // Update cell size if provided
+        if (mapInfo.grid.cellSize) {
+          this.cellWidth = mapInfo.grid.cellSize.width || this.cellWidth;
+          this.cellHeight = mapInfo.grid.cellSize.height || this.cellHeight;
+        }
+
+        // Set map metadata
+        this.mapName = mapInfo.name || mapInfo.id;
+      } else {
+        // Old format - direct map data array
+        this.mapData = mapInfo;
+        // Try to infer dimensions from the array
+        if (Array.isArray(mapInfo) && mapInfo.length > 0) {
+          this.gridRows = mapInfo.length;
+          this.gridCols = mapInfo[0]?.length || this.gridCols;
+        }
+      }
+
       this.updateGridFromMap();
     },
 
@@ -166,8 +272,164 @@ export const useGridStore = defineStore("grid", {
       }
     },
 
+    // Update grid status based on map data
+    updateGridStatus() {
+      if (!this.mapData) return;
+
+      for (let row = 0; row < this.gridRows; row++) {
+        for (let col = 0; col < this.gridCols; col++) {
+          const cellType = this.mapData[row]?.[col];
+          const cellKey = `${row},${col}`;
+
+          // Preserve existing waypoints and entities
+          const existingStatus = this.gridStatus[cellKey] || {};
+
+          if (cellType === "r" || cellType === "p") {
+            // Road or path - not void
+            this.gridStatus[cellKey] = {
+              ...existingStatus,
+              occupied: existingStatus.entityType ? true : false,
+              entityType: existingStatus.entityType || null,
+              sidewalk: cellType === "p",
+            };
+          } else {
+            // Void cell
+            this.gridStatus[cellKey] = {
+              ...existingStatus,
+              occupied: true,
+              entityType: "void",
+              sidewalk: false,
+            };
+          }
+        }
+      }
+    },
+
+    // Load scenario data from imported file
+    loadScenarioData(scenarioData) {
+      this._isInitialized = false; // Temporarily disable change tracking
+
+      try {
+        // Load environment settings
+        if (scenarioData.environment) {
+          this.mapName = scenarioData.environment.map;
+          this.weather = scenarioData.environment.weather;
+          this.category = scenarioData.environment.category;
+          this.cameraPosition = scenarioData.environment.cameraPosition;
+        }
+
+        // Load grid settings
+        if (scenarioData.grid) {
+          this.gridRows = scenarioData.grid.dimensions?.rows || 12;
+          this.gridCols = scenarioData.grid.dimensions?.cols || 8;
+          this.cellWidth = scenarioData.grid.cellSize?.width || 60;
+          this.cellHeight = scenarioData.grid.cellSize?.height || 50;
+          this.mapData = scenarioData.grid.mapData || null;
+        }
+
+        // Load entities
+        this.entities = scenarioData.entities || [];
+
+        // Load paths
+        this.paths = scenarioData.paths || [];
+
+        // Load waypoints
+        this.waypoints = scenarioData.waypoints || [];
+
+        // Load dboxes
+        this.dboxes = scenarioData.dboxes || [];
+
+        // Load display settings
+        if (scenarioData.settings) {
+          this.showGrid = scenarioData.settings.showGrid ?? true;
+          this.showPaths = scenarioData.settings.showPaths ?? true;
+          this.showWaypoints = scenarioData.settings.showWaypoints ?? true;
+          this.showEntities = scenarioData.settings.showEntities ?? true;
+          this.showDBoxes = scenarioData.settings.showDBoxes ?? true;
+        }
+
+        // Rebuild grid status
+        this.updateGridStatus();
+      } finally {
+        this._isInitialized = true; // Re-enable change tracking
+      }
+    },
+
+    // Load map data from JSON format
+    loadMapFromData(mapData, withAnimation = true) {
+      this._isInitialized = false; // Temporarily disable change tracking
+
+      try {
+        // Clear all existing scenario data first
+        this.entities = [];
+        this.paths = [];
+        this.waypoints = [];
+        this.dboxes = [];
+
+        // Reset selections
+        this.selectedPath = null;
+        this.selectedEntity = null;
+        this.selectedDBox = null;
+
+        // Update grid dimensions if provided
+        if (mapData.size) {
+          this.gridRows = mapData.size.rows;
+          this.gridCols = mapData.size.cols;
+        }
+
+        // Set map metadata
+        if (mapData.name) {
+          this.mapName = mapData.name;
+        }
+        if (mapData.category) {
+          this.category = mapData.category;
+        }
+
+        // Set the map data
+        this.mapData = mapData.mapData;
+
+        // Reinitialize grid with new dimensions
+        this.initializeGrid();
+
+        // Update grid status based on new map
+        this.updateGridStatus();
+
+        // Trigger stagger animation if requested
+        if (withAnimation) {
+          this.mapAnimating = true;
+          // Animation will be handled by the Vue component
+          // Store will be notified when animation completes
+        }
+
+        // Load spawn points as entities if provided (after animation)
+        if (mapData.spawnPoints && !withAnimation) {
+          mapData.spawnPoints.forEach((spawn) => {
+            this.addEntity({
+              type: spawn.type,
+              x: spawn.x,
+              y: spawn.y,
+              heading: "North",
+            });
+          });
+        }
+      } finally {
+        this._isInitialized = true; // Re-enable change tracking
+      }
+    },
+
     // Entity management
     addEntity(entity) {
+      const result = this._addEntityInternal(entity);
+
+      if (result) {
+        // Trigger change notification
+        this._notifyChange("entity_added", entity);
+      }
+
+      return result;
+    },
+
+    _addEntityInternal(entity) {
       const { type, x, y } = entity;
       const cellKey = `${x},${y}`;
 
@@ -197,43 +459,15 @@ export const useGridStore = defineStore("grid", {
       return true;
     },
 
-    removeEntity(x, y) {
-      const entityIndex = this.entities.findIndex(
-        (e) => e.x === x && e.y === y
-      );
-      if (entityIndex !== -1) {
-        this.entities.splice(entityIndex, 1);
-
-        const cellKey = `${x},${y}`;
-        this.gridStatus[cellKey] = {
-          ...this.gridStatus[cellKey],
-          occupied: false,
-          entityType: null,
-        };
-        return true;
-      }
-      return false;
-    },
-
     // Waypoint management
     addWaypoint(waypoint) {
-      const { x, y, positionInCell = "middle-center" } = waypoint;
-      const cellKey = `${x},${y}`;
-
-      // Add to waypoints collection
       this.waypoints.push({
         id: `waypoint_${Date.now()}`,
-        x,
-        y,
-        positionInCell,
+        positionInCell: "middle-center",
         ...waypoint,
       });
 
-      // Update grid status
-      if (!this.gridStatus[cellKey].waypoints) {
-        this.gridStatus[cellKey].waypoints = [];
-      }
-      this.gridStatus[cellKey].waypoints.push(waypoint);
+      this._notifyChange("waypoint_added", waypoint);
     },
 
     removeWaypoint(x, y, positionInCell) {
@@ -259,11 +493,12 @@ export const useGridStore = defineStore("grid", {
     addPath(path) {
       this.paths.push({
         id: `path_${Date.now()}`,
-        path: `#Path${Date.now()}`,
-        waypoints: [],
         color: "#2196F3",
+        waypoints: [],
         ...path,
       });
+
+      this._notifyChange("path_added", path);
     },
 
     removePath(pathId) {
@@ -364,7 +599,7 @@ export const useGridStore = defineStore("grid", {
     },
 
     // Scenario management
-    setScenario(scenario) {
+    async setScenario(scenario) {
       this.scenarioName = scenario.scenarioName?.split("#")[1] || null;
       this.mapName = scenario.scenarioMap || null;
       this.weather = scenario.weather || "Clear";
@@ -375,6 +610,21 @@ export const useGridStore = defineStore("grid", {
       if (scenario.paths) this.paths = scenario.paths;
       if (scenario.waypoints) this.waypoints = scenario.waypoints;
       if (scenario.dboxes) this.dboxes = scenario.dboxes;
+
+      // Load the map data when setting a scenario
+      if (this.mapName) {
+        try {
+          const response = await fetch(`/maps/${this.mapName}.json`);
+          if (response.ok) {
+            const mapData = await response.json();
+            this.setMapData(mapData);
+          } else {
+            console.warn(`Could not load map: ${this.mapName}`);
+          }
+        } catch (error) {
+          console.error(`Error loading map ${this.mapName}:`, error);
+        }
+      }
     },
 
     // Visibility toggles
@@ -397,6 +647,29 @@ export const useGridStore = defineStore("grid", {
     // Loading state
     setLoading(loading) {
       this.loading = loading;
+    },
+
+    // Complete map animation
+    completeMapAnimation() {
+      this.mapAnimating = false;
+    },
+
+    // Reset entire scenario
+    resetScenario() {
+      this.entities = [];
+      this.paths = [];
+      this.waypoints = [];
+      this.dboxes = [];
+      this.selectedPath = null;
+      this.selectedEntity = null;
+      this.selectedDBox = null;
+      this.scenarioName = null;
+    },
+
+    // Notify about changes for live streaming
+    _notifyChange(changeType, data) {
+      // This will be picked up by the store subscription
+      console.log(`Grid change: ${changeType}`, data);
     },
   },
 });

@@ -1,0 +1,142 @@
+{
+  "id": "interactive-01",
+  "name": "Interactive 01",
+  "description": "CARLA-ICTS benchmark scenario with multiple vehicles, pedestrian, and waypoints",
+  "mapId": "carjan-map01",
+  "entities": [
+    {
+      "id": "vehicle-1",
+      "type": "vehicle",
+      "subtype": "car",
+      "position": { "x": 4, "y": 11 },
+      "rotation": 0,
+      "color": "#000000",
+      "behavior": "static",
+      "properties": {
+        "model": "vehicle.audi.a2",
+        "speed": 0,
+        "maxSpeed": 50
+      }
+    },
+    {
+      "id": "vehicle-2",
+      "type": "vehicle",
+      "subtype": "car",
+      "position": { "x": 4, "y": 10 },
+      "rotation": 180,
+      "color": "#0066CC",
+      "behavior": "static",
+      "properties": {
+        "model": "vehicle.bmw.grandtourer",
+        "speed": 0,
+        "maxSpeed": 50
+      }
+    },
+    {
+      "id": "pedestrian-1",
+      "type": "pedestrian",
+      "position": { "x": 2, "y": 9 },
+      "rotation": 0,
+      "color": "#000000",
+      "behavior": "static",
+      "properties": {
+        "model": "walker.pedestrian.0001",
+        "speed": 0,
+        "maxSpeed": 1.4
+      }
+    }
+  ],
+  "waypoints": [
+    {
+      "id": "waypoint-1",
+      "position": { "x": 2, "y": 2 },
+      "color": "#FFA500",
+      "type": "navigation",
+      "priority": 1
+    },
+    {
+      "id": "waypoint-2",
+      "position": { "x": 4, "y": 0 },
+      "color": "#0066CC",
+      "type": "navigation",
+      "priority": 2
+    },
+    {
+      "id": "waypoint-3",
+      "position": { "x": 5, "y": 1 },
+      "color": "#FF00FF",
+      "type": "navigation",
+      "priority": 3
+    },
+    {
+      "id": "waypoint-4",
+      "position": { "x": 5, "y": 4 },
+      "color": "#000000",
+      "type": "navigation",
+      "priority": 4
+    },
+    {
+      "id": "waypoint-5",
+      "position": { "x": 5, "y": 5 },
+      "color": "#0066CC",
+      "type": "navigation",
+      "priority": 5
+    },
+    {
+      "id": "waypoint-6",
+      "position": { "x": 3, "y": 6 },
+      "color": "#FF00FF",
+      "type": "navigation",
+      "priority": 6
+    }
+  ],
+  "paths": [
+    {
+      "id": "path-magenta",
+      "entityId": "vehicle-1",
+      "waypoints": ["waypoint-3", "waypoint-6"],
+      "color": "#FF00FF",
+      "type": "navigation",
+      "style": "dashed"
+    },
+    {
+      "id": "path-blue-vertical",
+      "entityId": "vehicle-2",
+      "waypoints": ["waypoint-2", "waypoint-5"],
+      "color": "#0066CC",
+      "type": "navigation",
+      "style": "dashed"
+    }
+  ],
+  "spawnPoints": [
+    {
+      "id": "spawn-vehicle-1",
+      "position": { "x": 4, "y": 11 },
+      "type": "vehicle",
+      "entityId": "vehicle-1"
+    },
+    {
+      "id": "spawn-vehicle-2",
+      "position": { "x": 4, "y": 10 },
+      "type": "vehicle",
+      "entityId": "vehicle-2"
+    },
+    {
+      "id": "spawn-pedestrian-1",
+      "position": { "x": 2, "y": 9 },
+      "type": "pedestrian",
+      "entityId": "pedestrian-1"
+    }
+  ],
+  "scenario": {
+    "duration": 300,
+    "timeStep": 0.1,
+    "weather": "Clear",
+    "timeOfDay": "Noon",
+    "objectives": [
+      "Navigate vehicles along defined paths",
+      "Avoid collision with pedestrian",
+      "Reach all waypoints in sequence"
+    ]
+  }
+}
