@@ -264,7 +264,7 @@ const connectionStatusClass = computed(() =>
 );
 
 const connectionStatusText = computed(() =>
-  isConnected.value ? "Connected to CARLA" : "Disconnected"
+  isConnected.value ? "Connected" : "Disconnected"
 );
 
 // Recent files from the store

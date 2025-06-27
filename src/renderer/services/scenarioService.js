@@ -17,14 +17,53 @@ class ScenarioService {
         scenarioMetadata = indexData.scenarios;
       }
 
+      const loadedScenarios = [];
+
+      // First, load scenarios from the scenarios-index.json
+      for (const metadata of scenarioMetadata) {
+        try {
+          const response = await fetch(`/scenarios/${metadata.file}`);
+          if (response.ok) {
+            const scenarioData = await response.json();
+
+            // Convert to our scenario format
+            const scenario = {
+              id: metadata.id,
+              name: metadata.name || scenarioData.name,
+              mapName: metadata.map || scenarioData.mapId,
+              mapId: metadata.map || scenarioData.mapId,
+              lastModified:
+                scenarioData.metadata?.modified || new Date().toISOString(),
+              entityCount: scenarioData.entities
+                ? scenarioData.entities.length
+                : 0,
+              pathCount: scenarioData.paths ? scenarioData.paths.length : 0,
+              waypointCount: scenarioData.waypoints
+                ? scenarioData.waypoints.length
+                : 0,
+              description: metadata.description || scenarioData.description,
+              category: metadata.category,
+              author: scenarioData.metadata?.author || "Unknown",
+              difficulty: metadata.difficulty || "medium",
+              duration: metadata.duration || "5-10 minutes",
+              tags: metadata.tags || [],
+              thumbnailPath: `/scenarios/thumbnails/${metadata.id}.png`,
+              data: scenarioData,
+            };
+
+            loadedScenarios.push(scenario);
+          }
+        } catch (fileError) {
+          console.warn(`Could not load scenario ${metadata.id}:`, fileError);
+        }
+      }
+
       // Load example scenarios
       const exampleFiles = [
         "urban-intersection.json",
         "highway-overtaking.json",
         "parking-lot.json",
       ];
-
-      const loadedScenarios = [];
 
       for (const filename of exampleFiles) {
         try {
@@ -40,6 +79,7 @@ class ScenarioService {
               id: filename.replace(".json", ""),
               name: scenarioData.metadata.name,
               mapName: scenarioData.environment.map,
+              mapId: scenarioData.environment.map,
               lastModified: scenarioData.metadata.modified,
               entityCount: scenarioData.entities
                 ? scenarioData.entities.length
@@ -54,6 +94,10 @@ class ScenarioService {
               difficulty: metadata?.difficulty || "medium",
               duration: metadata?.duration || "5-10 minutes",
               tags: metadata?.tags || [],
+              thumbnailPath: `/example-scenarios/thumbnails/${filename.replace(
+                ".json",
+                ""
+              )}.png`,
               data: scenarioData,
             };
 

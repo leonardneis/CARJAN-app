@@ -8,7 +8,7 @@
     "description": "Multi-lane highway with overtaking maneuvers and varying traffic density"
   },
   "environment": {
-    "map": "town04",
+    "map": "carjan-map01",
     "weather": "Clear",
     "category": "Highway",
     "cameraPosition": "up"

@@ -8,7 +8,7 @@
     "description": "A busy urban intersection with pedestrians, vehicles, and traffic management"
   },
   "environment": {
-    "map": "town03",
+    "map": "carjan-map02",
     "weather": "Clear",
     "category": "Urban",
     "cameraPosition": "up"

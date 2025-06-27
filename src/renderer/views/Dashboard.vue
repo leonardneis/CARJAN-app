@@ -240,7 +240,7 @@ const collapseSidebar = () => {
 const selectItem = (itemName) => {
   if (itemName === "scenarios") {
     // Navigate to Scenario Manager
-    router.push("/scenarios");
+    router.push("/new");
   } else {
     activeItem.value = itemName;
   }

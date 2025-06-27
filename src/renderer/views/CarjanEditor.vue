@@ -350,11 +350,19 @@ onMounted(async () => {
     // Initialize grid first
     gridStore.initializeGrid();
 
-    // Set some default values
-    gridStore.scenarioName = "New Scenario";
-    gridStore.weather = "Clear";
-    gridStore.category = "Urban";
-    gridStore.cameraPosition = "up";
+    // Set default values only if they're not already set
+    if (!gridStore.scenarioName) {
+      gridStore.scenarioName = "New Scenario";
+    }
+    if (!gridStore.weather) {
+      gridStore.weather = "Clear";
+    }
+    if (!gridStore.category) {
+      gridStore.category = "Urban";
+    }
+    if (!gridStore.cameraPosition) {
+      gridStore.cameraPosition = "up";
+    }
 
     // Check if we should load a sample scenario or a specific scenario
     if (route.query.loadSample === "true") {

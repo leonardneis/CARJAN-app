@@ -1252,8 +1252,8 @@ watch(isSpacePressed, (newValue) => {
 }
 
 .cell-void {
-  background-color: #333333 !important;
-  opacity: 0.7;
+  background-color: #1a1a1a !important;
+  opacity: 0.9;
 }
 
 .cell-sidewalk {

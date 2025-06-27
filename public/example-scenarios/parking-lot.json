@@ -8,7 +8,7 @@
     "description": "Vehicle parking maneuvers in a crowded parking lot with pedestrians"
   },
   "environment": {
-    "map": "parking-complex",
+    "map": "carjan-map01",
     "weather": "Clear",
     "category": "Parking",
     "cameraPosition": "up"

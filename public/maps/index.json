@@ -1,75 +1,52 @@
 {
   "maps": [
     {
-      "id": "highway-straight",
-      "name": "Highway Straight",
-      "description": "A straight highway section perfect for overtaking scenarios",
-      "category": "Highway",
+      "id": "carjan-map01",
+      "name": "CARJAN Map 01",
+      "description": "Classic CARJAN map with central road and sidewalks",
+      "category": "CARJAN Classic",
       "difficulty": "Easy",
-      "thumbnail": "/maps/thumbnails/highway-straight.png",
-      "file": "/maps/highway-straight.json"
+      "thumbnail": "/maps/thumbnails/carjan-map01.png",
+      "file": "/maps/carjan-map01.json"
     },
     {
-      "id": "urban-intersection",
-      "name": "Urban Intersection",
-      "description": "A complex city intersection with multiple road connections",
-      "category": "Urban",
+      "id": "carjan-map02",
+      "name": "CARJAN Map 02",
+      "description": "CARJAN map with intersection at the right side",
+      "category": "CARJAN Classic",
       "difficulty": "Medium",
-      "thumbnail": "/maps/thumbnails/urban-intersection.png",
-      "file": "/maps/urban-intersection.json"
+      "thumbnail": "/maps/thumbnails/carjan-map02.png",
+      "file": "/maps/carjan-map02.json"
     },
     {
-      "id": "parking-lot",
-      "name": "Parking Lot",
-      "description": "A parking area with pedestrian paths - ideal for autonomous parking scenarios",
-      "category": "Urban",
-      "difficulty": "Easy",
-      "thumbnail": "/maps/thumbnails/parking-lot.png",
-      "file": "/maps/parking-lot.json"
-    },
-    {
-      "id": "highway-curve",
-      "name": "Highway Curve",
-      "description": "A curved highway section with challenging turns and lane changes",
-      "category": "Highway",
+      "id": "carjan-map03",
+      "name": "CARJAN Map 03",
+      "description": "CARJAN map with full crossroads intersection",
+      "category": "CARJAN Classic",
       "difficulty": "Hard",
-      "thumbnail": "/maps/thumbnails/highway-curve.png",
-      "file": "/maps/highway-curve.json"
+      "thumbnail": "/maps/thumbnails/carjan-map03.png",
+      "file": "/maps/carjan-map03.json"
     },
     {
-      "id": "city-roundabout",
-      "name": "City Roundabout",
-      "description": "A circular roundabout in an urban environment with multiple entry/exit points",
-      "category": "Urban",
-      "difficulty": "Hard",
-      "thumbnail": "/maps/thumbnails/city-roundabout.png",
-      "file": "/maps/city-roundabout.json"
-    },
-    {
-      "id": "residential-street",
-      "name": "Residential Street",
-      "description": "A quiet residential street with sidewalks and pedestrian crossings",
-      "category": "Residential",
-      "difficulty": "Easy",
-      "thumbnail": "/maps/thumbnails/residential-street.png",
-      "file": "/maps/residential-street.json"
+      "id": "carjan-map04",
+      "name": "CARJAN Map 04",
+      "description": "CARJAN map with wide intersection at the top",
+      "category": "CARJAN Classic",
+      "difficulty": "Medium",
+      "thumbnail": "/maps/thumbnails/carjan-map04.png",
+      "file": "/maps/carjan-map04.json"
     }
   ],
   "categories": [
     {
-      "id": "highway",
-      "name": "Highway",
-      "description": "High-speed roads for vehicle scenarios"
+      "id": "carla-icts",
+      "name": "CARLA-ICTS",
+      "description": "CARLA-ICTS benchmark maps for testing autonomous vehicles"
     },
     {
-      "id": "urban",
-      "name": "Urban",
-      "description": "City environments with mixed traffic"
-    },
-    {
-      "id": "residential",
-      "name": "Residential",
-      "description": "Quiet neighborhood streets"
+      "id": "carjan-classic",
+      "name": "CARJAN Classic",
+      "description": "Original CARJAN maps for scenario testing"
     }
   ]
 }

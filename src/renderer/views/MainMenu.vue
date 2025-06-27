@@ -1,5 +1,5 @@
 <template>
-  <div class="main-menu" :class="{ 'fade-in': isLoaded }">
+  <div class="main-menu" :class="{ 'fade-in': isLoaded, leaving: isLeaving }">
     <!-- Vanta.js Background -->
     <div ref="vantaRef" class="vanta-background"></div>
 
@@ -63,16 +63,21 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
-import { initVantaDots, destroyVantaEffect } from "../services/vantaService.js";
+import {
+  initVantaDots,
+  pauseVantaEffect,
+  destroyVantaEffect,
+} from "../services/vantaService.js";
 
 const router = useRouter();
 const toast = useToast();
 
 // Vanta.js setup
 const vantaRef = ref(null);
+const isLeaving = ref(false);
 const isLoaded = ref(false);
 
 onMounted(async () => {
@@ -93,12 +98,32 @@ onMounted(async () => {
   }, 200);
 });
 
+// Handle route leaving to gracefully stop VantaJS
+onBeforeRouteLeave((to, from, next) => {
+  isLeaving.value = true;
+  // Allow the navigation to proceed immediately
+  next();
+});
+
 onUnmounted(() => {
-  destroyVantaEffect();
+  // Only destroy vanta if we're actually leaving
+  if (isLeaving.value) {
+    // Delay vanta destruction to allow for transition
+    setTimeout(() => {
+      destroyVantaEffect();
+    }, 400); // A bit longer than the fade-leave-active (300ms)
+  } else {
+    // Immediate destruction if component is being destroyed for other reasons
+    destroyVantaEffect();
+  }
 });
 
 const goToScenarios = () => {
-  router.push("/scenario-selection");
+  isLeaving.value = true;
+  // Small delay to allow the leaving animation to start
+  setTimeout(() => {
+    router.push("/scenario-selection");
+  }, 50);
 };
 
 const goToCarla = () => {
@@ -112,7 +137,10 @@ const goToCarla = () => {
 };
 
 const goToSettings = () => {
-  router.push("/settings");
+  isLeaving.value = true;
+  setTimeout(() => {
+    router.push("/settings");
+  }, 50);
 };
 
 const showMapsComingSoon = () => {
@@ -149,6 +177,21 @@ const quitApplication = () => {
 
 .main-menu.fade-in {
   opacity: 1;
+}
+
+.main-menu.leaving {
+  transition: all 0.3s ease;
+}
+
+.main-menu.leaving .vanta-background {
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+
+.main-menu.leaving .menu-background {
+  transition: opacity 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .vanta-background {

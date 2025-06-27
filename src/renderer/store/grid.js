@@ -52,14 +52,15 @@ export const useGridStore = defineStore("grid", {
     currentCellPosition: [],
     currentCellStatus: null,
 
-    // Colors - Pastel palette for better visual appeal
+    // Colors - Modern palette with better contrast and readability
     colors: {
-      road: "#A8E6CF", // Pastel mint green for roads
-      path: "#B8D8F0", // Pastel blue for paths/sidewalks
-      void: "#2D2D2D", // Dark gray for void (unchanged)
-      entity: "#FFD3A5", // Pastel peach for entities
-      waypoint: "#D4A5FF", // Pastel purple for waypoints
-      path_selected: "#FFB3BA", // Pastel pink for selected path
+      road: "#6B9BD9", // Clear blue for roads
+      sidewalk: "#95A5C6", // Muted blue-gray for sidewalks
+      path: "#95A5C6", // Legacy support - same as sidewalk
+      void: "#1a1a1a", // Dark charcoal for void
+      entity: "#FF5722", // Orange-red for entities
+      waypoint: "#FFD700", // Gold for waypoints
+      path_selected: "#FF00FF", // Magenta for selected path
     },
 
     // Change tracking for auto-save
@@ -78,7 +79,8 @@ export const useGridStore = defineStore("grid", {
       if (mapData && mapData[row] && mapData[row][col]) {
         const cellType = mapData[row][col];
         if (cellType === "r") return state.colors.road;
-        if (cellType === "p") return state.colors.path;
+        if (cellType === "s") return state.colors.sidewalk;
+        if (cellType === "p") return state.colors.path; // Legacy support
       }
       return state.colors.void;
     },

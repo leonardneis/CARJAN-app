@@ -1,37 +1,33 @@
 {
   "scenarios": [
     {
-      "id": "urban-intersection",
-      "name": "Urban Intersection Scenario",
-      "category": "Urban",
-      "map": "town03",
-      "file": "urban-intersection.json",
-      "description": "A busy urban intersection with pedestrians, vehicles, and traffic management",
+      "id": "interactive-01",
+      "name": "Interactive 01",
+      "category": "CARLA-ICTS",
+      "map": "carjan-map01",
+      "file": "interactive-01.json",
+      "description": "CARLA-ICTS benchmark scenario with multiple vehicles, pedestrian, and waypoints",
       "difficulty": "medium",
       "duration": "5-10 minutes",
-      "tags": ["intersection", "traffic", "pedestrians", "urban"]
+      "tags": ["benchmark", "CARLA-ICTS", "multi-agent", "waypoints"]
     },
     {
-      "id": "highway-overtaking",
-      "name": "Highway Overtaking Scenario",
-      "category": "Highway",
-      "map": "town04",
-      "file": "highway-overtaking.json",
-      "description": "Multi-lane highway with overtaking maneuvers and varying traffic density",
-      "difficulty": "hard",
-      "duration": "10-15 minutes",
-      "tags": ["highway", "overtaking", "high-speed", "traffic"]
-    },
-    {
-      "id": "parking-lot",
-      "name": "Parking Lot Scenario",
-      "category": "Parking",
-      "map": "parking-complex",
-      "file": "parking-lot.json",
-      "description": "Vehicle parking maneuvers in a crowded parking lot with pedestrians",
+      "id": "example-demo",
+      "name": "Example Demo",
+      "category": "Demo",
+      "map": "town01",
+      "file": "example-demo.json",
+      "description": "Demo scenario showcasing CARJAN features",
       "difficulty": "easy",
-      "duration": "3-7 minutes",
-      "tags": ["parking", "maneuvering", "pedestrians", "low-speed"]
+      "duration": "3-5 minutes",
+      "tags": ["demo", "example", "basic"]
+    }
+  ],
+  "categories": [
+    {
+      "id": "carla-icts",
+      "name": "CARLA-ICTS",
+      "description": "CARLA-ICTS benchmark scenarios for autonomous vehicle testing"
     }
   ]
 }

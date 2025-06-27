@@ -9,6 +9,7 @@
   "dependencies": {
     "@primeuix/themes": "^1.1.1",
     "animejs": "^4.0.2",
+    "canvas": "^3.1.2",
     "electron-store": "^10.0.1",
     "motion-v": "^1.2.1",
     "pinia": "^3.0.3",
@@ -42,7 +43,12 @@
     "electron:dist": "npm run build && electron-builder --publish=never",
     "electron:pack": "npm run build && electron-builder --dir",
     "test": "vitest run",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "thumbnails:generate": "node tools/generateThumbnails.cjs",
+    "thumbnails:single": "node tools/generateThumbnails.cjs",
+    "thumbnails:png": "node tools/generatePNGThumbnails.cjs",
+    "thumbnails:png-single": "node tools/generatePNGThumbnails.cjs",
+    "thumbnails:scenarios": "node tools/generateScenarioThumbnails.cjs"
   },
   "vitest": {
     "include": [

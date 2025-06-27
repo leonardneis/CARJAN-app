@@ -163,6 +163,20 @@ const createCSSDotsEffect = (element) => {
   console.log("CSS dots fallback created!");
 };
 
+export const pauseVantaEffect = () => {
+  if (vantaEffect) {
+    // Try to pause the animation if the method exists
+    if (typeof vantaEffect.pause === "function") {
+      vantaEffect.pause();
+    } else if (vantaEffect.uniforms) {
+      // For some Vanta effects, we can stop animation by setting time scale to 0
+      if (vantaEffect.uniforms.uTime) {
+        vantaEffect.options.speed = 0;
+      }
+    }
+  }
+};
+
 export const destroyVantaEffect = () => {
   if (vantaEffect && typeof vantaEffect.destroy === "function") {
     vantaEffect.destroy();
@@ -172,5 +186,6 @@ export const destroyVantaEffect = () => {
 
 export default {
   initVantaDots,
+  pauseVantaEffect,
   destroyVantaEffect,
 };

@@ -23,7 +23,7 @@ const routes = [
   },
   { path: "/landing", name: "LandingPage", component: LandingPage },
   { path: "/carjan", name: "CarjanEditor", component: CarjanEditor },
-  { path: "/scenarios", name: "ScenarioManager", component: ScenarioManager },
+  { path: "/new", name: "ScenarioManager", component: ScenarioManager },
   { path: "/settings", name: "Settings", component: Settings },
   // Fallback route - redirect any unknown paths to splash
   { path: "/:pathMatch(.*)*", redirect: "/" },
