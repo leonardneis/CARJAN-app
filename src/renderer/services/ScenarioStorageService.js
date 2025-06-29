@@ -6,6 +6,7 @@ class ScenarioStorageService {
   constructor() {
     this.STORAGE_KEY = "carjan-scenarios";
     this.SCENARIO_DATA_PREFIX = "carjan-scenario-";
+    this.AUTOSAVE_PREFIX = "carjan-autosave-";
   }
 
   /**
@@ -368,6 +369,84 @@ class ScenarioStorageService {
         totalSizeKB: 0,
         scenarios: [],
       };
+    }
+  }
+
+  /**
+   * Save autosave version of a scenario
+   * @param {string} scenarioId - Scenario ID
+   * @param {Object} scenarioData - Scenario data to autosave
+   */
+  saveAutosave(scenarioId, scenarioData) {
+    try {
+      const autosaveData = {
+        ...scenarioData,
+        isAutosave: true,
+        autosaveTimestamp: new Date().toISOString(),
+      };
+
+      localStorage.setItem(
+        this.AUTOSAVE_PREFIX + scenarioId,
+        JSON.stringify(autosaveData)
+      );
+
+      console.log(`Autosaved scenario: ${scenarioId}`);
+      return true;
+    } catch (error) {
+      console.error(`Error autosaving scenario ${scenarioId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Get autosave version of a scenario
+   * @param {string} scenarioId - Scenario ID
+   * @returns {Object|null} Autosave data or null if not found
+   */
+  getAutosave(scenarioId) {
+    try {
+      const stored = localStorage.getItem(this.AUTOSAVE_PREFIX + scenarioId);
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.error(`Error loading autosave for ${scenarioId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if there's a newer autosave than the main scenario
+   * @param {string} scenarioId - Scenario ID
+   * @returns {boolean} True if autosave is newer
+   */
+  hasNewerAutosave(scenarioId) {
+    try {
+      const mainData = this.getScenarioData(scenarioId);
+      const autosaveData = this.getAutosave(scenarioId);
+
+      if (!mainData || !autosaveData) return false;
+
+      const mainTime = new Date(mainData.lastModified || 0);
+      const autosaveTime = new Date(autosaveData.autosaveTimestamp || 0);
+
+      return autosaveTime > mainTime;
+    } catch (error) {
+      console.error(
+        `Error comparing autosave timestamps for ${scenarioId}:`,
+        error
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Clear autosave for a scenario
+   * @param {string} scenarioId - Scenario ID
+   */
+  clearAutosave(scenarioId) {
+    try {
+      localStorage.removeItem(this.AUTOSAVE_PREFIX + scenarioId);
+    } catch (error) {
+      console.error(`Error clearing autosave for ${scenarioId}:`, error);
     }
   }
 }

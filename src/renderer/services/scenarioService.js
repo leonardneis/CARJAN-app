@@ -8,13 +8,29 @@ class ScenarioService {
   // Load all available scenarios
   async loadScenarios() {
     try {
+      console.log("Starting to load scenarios...");
+
       // Load scenarios index
       const indexResponse = await fetch("/scenarios/scenarios-index.json");
       let scenarioMetadata = [];
 
       if (indexResponse.ok) {
-        const indexData = await indexResponse.json();
-        scenarioMetadata = indexData.scenarios;
+        try {
+          const indexData = await indexResponse.json();
+          scenarioMetadata = indexData.scenarios;
+          console.log(
+            "Loaded scenarios index:",
+            scenarioMetadata.length,
+            "scenarios"
+          );
+        } catch (jsonError) {
+          console.warn("Failed to parse scenarios index JSON:", jsonError);
+        }
+      } else {
+        console.warn(
+          "Scenarios index not found, status:",
+          indexResponse.status
+        );
       }
 
       const loadedScenarios = [];
@@ -22,9 +38,16 @@ class ScenarioService {
       // First, load scenarios from the scenarios-index.json
       for (const metadata of scenarioMetadata) {
         try {
+          console.log(`Loading scenario: ${metadata.id}`);
           const response = await fetch(`/scenarios/${metadata.file}`);
           if (response.ok) {
-            const scenarioData = await response.json();
+            const text = await response.text();
+            if (text.trim() === "") {
+              console.warn(`Empty scenario file: ${metadata.file}`);
+              continue;
+            }
+
+            const scenarioData = JSON.parse(text);
 
             // Convert to our scenario format
             const scenario = {
@@ -52,6 +75,10 @@ class ScenarioService {
             };
 
             loadedScenarios.push(scenario);
+          } else {
+            console.warn(
+              `Scenario file not found: ${metadata.file}, status: ${response.status}`
+            );
           }
         } catch (fileError) {
           console.warn(`Could not load scenario ${metadata.id}:`, fileError);
@@ -65,11 +92,19 @@ class ScenarioService {
         "parking-lot.json",
       ];
 
+      console.log("Loading example scenarios...");
       for (const filename of exampleFiles) {
         try {
+          console.log(`Loading example scenario: ${filename}`);
           const response = await fetch(`/example-scenarios/${filename}`);
           if (response.ok) {
-            const scenarioData = await response.json();
+            const text = await response.text();
+            if (text.trim() === "") {
+              console.warn(`Empty example scenario file: ${filename}`);
+              continue;
+            }
+
+            const scenarioData = JSON.parse(text);
 
             // Get metadata from index if available
             const metadata = scenarioMetadata.find((m) => m.file === filename);
@@ -77,10 +112,13 @@ class ScenarioService {
             // Convert to our scenario format
             const scenario = {
               id: filename.replace(".json", ""),
-              name: scenarioData.metadata.name,
-              mapName: scenarioData.environment.map,
-              mapId: scenarioData.environment.map,
-              lastModified: scenarioData.metadata.modified,
+              name:
+                scenarioData.metadata?.name ||
+                filename.replace(".json", "").replace("-", " "),
+              mapName: scenarioData.environment?.map || "carjan-map01",
+              mapId: scenarioData.environment?.map || "carjan-map01",
+              lastModified:
+                scenarioData.metadata?.modified || new Date().toISOString(),
               entityCount: scenarioData.entities
                 ? scenarioData.entities.length
                 : 0,
@@ -88,12 +126,13 @@ class ScenarioService {
               waypointCount: scenarioData.waypoints
                 ? scenarioData.waypoints.length
                 : 0,
-              description: scenarioData.metadata.description,
-              category: scenarioData.environment.category,
-              author: scenarioData.metadata.author,
+              description:
+                scenarioData.metadata?.description || "Example scenario",
+              category: scenarioData.environment?.category || "Example",
+              author: scenarioData.metadata?.author || "CARJAN",
               difficulty: metadata?.difficulty || "medium",
               duration: metadata?.duration || "5-10 minutes",
-              tags: metadata?.tags || [],
+              tags: metadata?.tags || ["example"],
               thumbnailPath: `/example-scenarios/thumbnails/${filename.replace(
                 ".json",
                 ""
@@ -102,18 +141,114 @@ class ScenarioService {
             };
 
             loadedScenarios.push(scenario);
+          } else {
+            console.warn(
+              `Example scenario file not found: ${filename}, status: ${response.status}`
+            );
           }
         } catch (fileError) {
           console.warn(`Could not load ${filename}:`, fileError);
         }
       }
 
+      console.log(`Successfully loaded ${loadedScenarios.length} scenarios`);
+
+      // If no scenarios were loaded, create some default/empty scenarios
+      if (loadedScenarios.length === 0) {
+        console.log(
+          "No scenarios loaded from files, creating default scenarios..."
+        );
+        loadedScenarios.push(...this.createDefaultScenarios());
+      }
+
       this.scenarios = loadedScenarios;
       return this.scenarios;
     } catch (error) {
       console.error("Error loading scenarios:", error);
-      return [];
+      // Return some default scenarios even if loading fails
+      this.scenarios = this.createDefaultScenarios();
+      return this.scenarios;
     }
+  }
+
+  // Create default/fallback scenarios when files can't be loaded
+  createDefaultScenarios() {
+    return [
+      {
+        id: "new-urban-scenario",
+        name: "New Urban Scenario",
+        mapName: "carjan-map01",
+        mapId: "carjan-map01",
+        lastModified: new Date().toISOString(),
+        entityCount: 0,
+        pathCount: 0,
+        waypointCount: 0,
+        description: "A blank urban scenario template",
+        category: "Urban",
+        author: "CARJAN",
+        difficulty: "easy",
+        duration: "5-10 minutes",
+        tags: ["template", "urban"],
+        thumbnailPath: "/assets/img/default-urban.png",
+        data: {
+          metadata: {
+            name: "New Urban Scenario",
+            version: "1.0.0",
+            created: new Date().toISOString(),
+            modified: new Date().toISOString(),
+            author: "CARJAN",
+            description: "A blank urban scenario template",
+          },
+          environment: {
+            weather: "Clear",
+            category: "Urban",
+            cameraPosition: "up",
+            map: "carjan-map01",
+          },
+          entities: [],
+          waypoints: [],
+          paths: [],
+          dboxes: [],
+        },
+      },
+      {
+        id: "new-highway-scenario",
+        name: "New Highway Scenario",
+        mapName: "Town04",
+        mapId: "Town04",
+        lastModified: new Date().toISOString(),
+        entityCount: 0,
+        pathCount: 0,
+        waypointCount: 0,
+        description: "A blank highway scenario template",
+        category: "Highway",
+        author: "CARJAN",
+        difficulty: "medium",
+        duration: "5-10 minutes",
+        tags: ["template", "highway"],
+        thumbnailPath: "/assets/img/default-highway.png",
+        data: {
+          metadata: {
+            name: "New Highway Scenario",
+            version: "1.0.0",
+            created: new Date().toISOString(),
+            modified: new Date().toISOString(),
+            author: "CARJAN",
+            description: "A blank highway scenario template",
+          },
+          environment: {
+            weather: "Clear",
+            category: "Highway",
+            cameraPosition: "up",
+            map: "Town04",
+          },
+          entities: [],
+          waypoints: [],
+          paths: [],
+          dboxes: [],
+        },
+      },
+    ];
   }
 
   // Load all available maps
@@ -146,7 +281,61 @@ class ScenarioService {
 
   // Get a specific scenario by ID
   getScenario(scenarioId) {
-    return this.scenarios.find((s) => s.id === scenarioId);
+    console.log(`Looking for scenario with ID: ${scenarioId}`);
+    console.log(
+      `Available scenarios: ${this.scenarios.map((s) => s.id).join(", ")}`
+    );
+
+    const scenario = this.scenarios.find((s) => s.id === scenarioId);
+
+    if (!scenario) {
+      console.warn(`Scenario not found: ${scenarioId}`);
+      // Try to check if it's a dynamically generated scenario ID (from ScenarioSelection)
+      if (scenarioId.startsWith("scenario-")) {
+        console.log(
+          "Attempting to create a new default scenario for dynamic ID"
+        );
+        return {
+          id: scenarioId,
+          name: "New Scenario",
+          mapName: "carjan-map01",
+          mapId: "carjan-map01",
+          lastModified: new Date().toISOString(),
+          entityCount: 0,
+          pathCount: 0,
+          waypointCount: 0,
+          description: "A new scenario",
+          category: "Urban",
+          author: "CARJAN",
+          difficulty: "easy",
+          duration: "5-10 minutes",
+          tags: ["new"],
+          thumbnailPath: "/assets/img/default-urban.png",
+          data: {
+            metadata: {
+              name: "New Scenario",
+              version: "1.0.0",
+              created: new Date().toISOString(),
+              modified: new Date().toISOString(),
+              author: "CARJAN",
+              description: "A new scenario",
+            },
+            environment: {
+              weather: "Clear",
+              category: "Urban",
+              cameraPosition: "up",
+              map: "carjan-map01",
+            },
+            entities: [],
+            waypoints: [],
+            paths: [],
+            dboxes: [],
+          },
+        };
+      }
+    }
+
+    return scenario;
   }
 
   // Save scenario to localStorage
@@ -170,7 +359,7 @@ class ScenarioService {
     const newScenario = {
       id: `custom_${Date.now()}`,
       name: scenarioData.name || "New Scenario",
-      mapName: scenarioData.mapName || "town01",
+      mapName: scenarioData.mapName || "carjan-map01",
       created: new Date().toISOString(),
       lastModified: new Date().toISOString(),
       author: "User",

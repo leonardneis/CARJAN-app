@@ -16,6 +16,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   readFile: (filePath) => ipcRenderer.invoke("read-file", filePath),
   fileExists: (filePath) => ipcRenderer.invoke("file-exists", filePath),
 
+  // Autosave operations
+  writeAutosaveFile: (filename, content) =>
+    ipcRenderer.invoke("write-autosave-file", filename, content),
+  getAutosavePath: () => ipcRenderer.invoke("get-autosave-path"),
+
   // App operations
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   closeApp: () => ipcRenderer.invoke("close-app"),

@@ -181,10 +181,10 @@ export const useGridStore = defineStore("grid", {
 
       this.gridCells = cells;
       this.gridStatus = status;
-
-      // Set up change tracking after initialization
-      this._setupChangeTracking();
       this._isInitialized = true;
+
+      // Set up change tracking AFTER initialization is complete
+      this._setupChangeTracking();
     },
 
     // Setup change tracking for auto-save
@@ -192,13 +192,23 @@ export const useGridStore = defineStore("grid", {
       // Import scenarioStore within action to avoid circular dependencies
       const { useScenarioStore } = await import("./scenario.js");
 
+      // Track the last mutation timestamp to prevent duplicate triggers
+      let lastMutationTime = 0;
+
       // Watch for changes in critical data
       this.$subscribe((mutation, state) => {
         if (!this._isInitialized) return;
 
+        // Prevent rapid duplicate triggers
+        const now = Date.now();
+        if (now - lastMutationTime < 50) return; // 50ms debounce
+        lastMutationTime = now;
+
         const scenarioStore = useScenarioStore();
         const changeType = mutation.type;
         const payload = mutation.payload;
+
+        console.log(`Grid change detected: ${changeType}`, payload);
 
         // Mark scenario as dirty on any change
         scenarioStore.markDirty();
@@ -614,16 +624,125 @@ export const useGridStore = defineStore("grid", {
       // Load the map data when setting a scenario
       if (this.mapName) {
         try {
+          console.log(`Attempting to load map: ${this.mapName}`);
           const response = await fetch(`/maps/${this.mapName}.json`);
+
           if (response.ok) {
-            const mapData = await response.json();
-            this.setMapData(mapData);
+            const text = await response.text();
+
+            // Check if we got HTML instead of JSON (common in Electron when files are missing)
+            if (
+              text.trim().startsWith("<!DOCTYPE") ||
+              text.trim().startsWith("<html")
+            ) {
+              console.warn(
+                `Map file returned HTML instead of JSON for ${this.mapName}. This usually means the file doesn't exist or the server isn't serving static files properly.`
+              );
+              // Use a default/fallback map structure
+              this.setMapData(this.createDefaultMapData(this.mapName));
+            } else {
+              const mapData = JSON.parse(text);
+              this.setMapData(mapData);
+              console.log(`Successfully loaded map: ${this.mapName}`);
+            }
           } else {
-            console.warn(`Could not load map: ${this.mapName}`);
+            console.warn(
+              `Could not load map: ${this.mapName}, status: ${response.status}`
+            );
+            // Use a default/fallback map structure
+            this.setMapData(this.createDefaultMapData(this.mapName));
           }
         } catch (error) {
           console.error(`Error loading map ${this.mapName}:`, error);
+          // Use a default/fallback map structure
+          this.setMapData(this.createDefaultMapData(this.mapName));
         }
+      }
+    },
+
+    // Create default map data when map files can't be loaded
+    createDefaultMapData(mapName) {
+      console.log(`Creating default map data for: ${mapName}`);
+
+      // Basic map structure based on common CARJAN maps
+      const defaultMaps = {
+        "carjan-map01": {
+          name: "CARJAN Map 01",
+          description:
+            "Classic CARJAN map with central road and sidewalks (default fallback)",
+          bounds: { minX: -50, maxX: 50, minY: -50, maxY: 50 },
+          gridSize: { width: 100, height: 100 },
+          cellSize: 1.0,
+          origin: { x: 0, y: 0 },
+          roads: [],
+          intersections: [],
+          landmarks: [],
+        },
+        Town02: {
+          name: "Town02",
+          description: "Urban town with residential areas (default fallback)",
+          bounds: { minX: -75, maxX: 75, minY: -75, maxY: 75 },
+          gridSize: { width: 150, height: 150 },
+          cellSize: 1.0,
+          origin: { x: 0, y: 0 },
+          roads: [],
+          intersections: [],
+          landmarks: [],
+        },
+        Town03: {
+          name: "Town03",
+          description: "Large urban environment (default fallback)",
+          bounds: { minX: -100, maxX: 100, minY: -100, maxY: 100 },
+          gridSize: { width: 200, height: 200 },
+          cellSize: 1.0,
+          origin: { x: 0, y: 0 },
+          roads: [],
+          intersections: [],
+          landmarks: [],
+        },
+        Town04: {
+          name: "Town04",
+          description: "Highway and countryside (default fallback)",
+          bounds: { minX: -200, maxX: 200, minY: -50, maxY: 50 },
+          gridSize: { width: 400, height: 100 },
+          cellSize: 1.0,
+          origin: { x: 0, y: 0 },
+          roads: [],
+          intersections: [],
+          landmarks: [],
+        },
+        Town05: {
+          name: "Town05",
+          description: "Urban environment with bridges (default fallback)",
+          bounds: { minX: -80, maxX: 80, minY: -80, maxY: 80 },
+          gridSize: { width: 160, height: 160 },
+          cellSize: 1.0,
+          origin: { x: 0, y: 0 },
+          roads: [],
+          intersections: [],
+          landmarks: [],
+        },
+      };
+
+      // Return specific map data or generic fallback
+      if (defaultMaps[mapName]) {
+        return defaultMaps[mapName];
+      } else if (defaultMaps["carjan-map01"]) {
+        // Always fallback to carjan-map01 if unknown
+        return defaultMaps["carjan-map01"];
+      } else {
+        // Last resort: minimal map
+        return {
+          name: mapName,
+          description: "Fallback map",
+          bounds: { minX: -50, maxX: 50, minY: -50, maxY: 50 },
+          gridSize: { width: 100, height: 100 },
+          cellSize: 1.0,
+          origin: { x: 0, y: 0 },
+          roads: [],
+          intersections: [],
+          landmarks: [],
+        };
       }
     },
 

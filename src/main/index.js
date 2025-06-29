@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs/promises";
+import os from "os";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -102,6 +103,47 @@ ipcMain.handle("file-exists", async (event, filePath) => {
     return true;
   } catch (error) {
     return false;
+  }
+});
+
+// Autosave operations
+ipcMain.handle("get-autosave-path", async () => {
+  try {
+    const autosavePath = path.join(
+      os.homedir(),
+      "Documents",
+      "CARJAN_Autosaves"
+    );
+    // Ensure directory exists
+    await fs.mkdir(autosavePath, { recursive: true });
+    return autosavePath;
+  } catch (error) {
+    console.error("Error creating autosave path:", error);
+    // Fallback to Desktop
+    return path.join(os.homedir(), "Desktop");
+  }
+});
+
+ipcMain.handle("write-autosave-file", async (event, filename, content) => {
+  try {
+    // Get autosave path
+    const autosavePath = path.join(
+      os.homedir(),
+      "Documents",
+      "CARJAN_Autosaves"
+    );
+
+    // Ensure directory exists
+    await fs.mkdir(autosavePath, { recursive: true });
+
+    const filePath = path.join(autosavePath, filename);
+    await fs.writeFile(filePath, content, "utf8");
+
+    console.log(`Autosave file written: ${filePath}`);
+    return { success: true, filePath };
+  } catch (error) {
+    console.error("Write autosave file error:", error);
+    return { success: false, error: error.message };
   }
 });
 

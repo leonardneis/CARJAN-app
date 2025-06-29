@@ -16,9 +16,15 @@ export const useScenarioStore = defineStore("scenario", {
     // Auto-save settings
     autoSave: {
       enabled: true,
-      interval: 5000, // 5 seconds
-      lastSaved: null,
+      localStorageInterval: 0, // Immediate LocalStorage save
+      fileInterval: 30000, // 30 seconds for JSON file save
+      lastLocalSaved: null,
+      lastFileSaved: null,
       isDirty: false,
+      isFileDirty: false, // Separate flag for file-based saves
+      isInProgress: false,
+      timerId: null,
+      fileTimerId: null,
     },
 
     // Live streaming settings
@@ -32,6 +38,7 @@ export const useScenarioStore = defineStore("scenario", {
     currentFile: {
       path: null,
       saved: true,
+      scenarioId: null,
     },
 
     // Export/Import settings
@@ -43,6 +50,8 @@ export const useScenarioStore = defineStore("scenario", {
 
   getters: {
     isUnsaved: (state) => state.autoSave.isDirty || !state.currentFile.saved,
+
+    isFileUnsaved: (state) => state.autoSave.isFileDirty,
 
     scenarioData: (state) => {
       // This will be populated by combining data from gridStore
@@ -58,19 +67,45 @@ export const useScenarioStore = defineStore("scenario", {
 
   actions: {
     // Initialize scenario store
-    initialize() {
-      this.setupAutoSave();
+    initialize(notificationCallback = null) {
+      this.setupAutoSave(notificationCallback);
       this.setupChangeTracking();
+
+      // Initialize as saved state if no previous state exists
+      if (this.currentFile.saved === undefined) {
+        this.currentFile.saved = true;
+        this.autoSave.isDirty = false;
+        console.log("Scenario initialized in saved state");
+      }
     },
 
     // Setup auto-save mechanism
-    setupAutoSave() {
+    setupAutoSave(notificationCallback = null) {
       if (this.autoSave.enabled) {
-        setInterval(() => {
-          if (this.autoSave.isDirty) {
-            this.performAutoSave();
+        // Store notification callback for file autosave success
+        this.autoSave.notificationCallback = notificationCallback;
+
+        // Clear any existing timers
+        if (this.autoSave.timerId) {
+          clearInterval(this.autoSave.timerId);
+          this.autoSave.timerId = null;
+        }
+        if (this.autoSave.fileTimerId) {
+          clearInterval(this.autoSave.fileTimerId);
+          this.autoSave.fileTimerId = null;
+        }
+
+        // Setup periodic file-based autosave (30s)
+        this.autoSave.fileTimerId = setInterval(() => {
+          if (this.autoSave.isFileDirty && !this.autoSave.isInProgress) {
+            console.log("Performing scheduled file autosave...");
+            this.performFileAutoSave(this.autoSave.notificationCallback);
           }
-        }, this.autoSave.interval);
+        }, this.autoSave.fileInterval);
+
+        console.log(
+          "Autosave system initialized - LocalStorage immediate, File every 30s"
+        );
       }
     },
 
@@ -81,9 +116,20 @@ export const useScenarioStore = defineStore("scenario", {
 
     // Mark scenario as dirty (needs saving)
     markDirty() {
-      this.autoSave.isDirty = true;
-      this.currentFile.saved = false;
-      this.metadata.modified = new Date();
+      if (!this.autoSave.isDirty) {
+        console.log(
+          "Scenario marked as dirty - changes detected, triggering immediate LocalStorage autosave"
+        );
+        this.autoSave.isDirty = true;
+        this.autoSave.isFileDirty = true; // Also mark for file save
+        this.currentFile.saved = false;
+        this.metadata.modified = new Date();
+
+        // Trigger immediate LocalStorage autosave if enabled
+        if (this.autoSave.enabled && !this.autoSave.isInProgress) {
+          this.performLocalStorageAutoSave();
+        }
+      }
     },
 
     // Create new scenario
@@ -99,10 +145,12 @@ export const useScenarioStore = defineStore("scenario", {
 
       this.currentFile = {
         path: null,
-        saved: false,
+        saved: true, // Start as saved until real changes are made
       };
 
-      this.markDirty();
+      // Reset dirty state for new scenario
+      this.autoSave.isDirty = false;
+      console.log("New scenario created in saved state");
     },
 
     // Save scenario
@@ -163,14 +211,41 @@ export const useScenarioStore = defineStore("scenario", {
     },
 
     // Build complete scenario data from stores
-    buildScenarioData() {
-      const { useGridStore } = require("./grid.js");
-      const gridStore = useGridStore();
+    async buildScenarioData() {
+      try {
+        const { useGridStore } = await import("./grid.js");
+        const gridStore = useGridStore();
 
-      return {
-        metadata: { ...this.metadata },
-        ...gridStore.scenarioData,
-      };
+        const scenarioData = {
+          metadata: { ...this.metadata },
+          environment: {
+            weather: gridStore.weather || "Clear",
+            category: gridStore.category || "Urban",
+            cameraPosition: gridStore.cameraPosition || "up",
+          },
+          entities: gridStore.entities || [],
+          waypoints: gridStore.waypoints || [],
+          paths: gridStore.paths || [],
+          dboxes: gridStore.dboxes || [],
+        };
+
+        console.log("Built scenario data for autosave:", scenarioData);
+        return scenarioData;
+      } catch (error) {
+        console.error("Error building scenario data:", error);
+        return {
+          metadata: { ...this.metadata },
+          environment: {
+            weather: "Clear",
+            category: "Urban",
+            cameraPosition: "up",
+          },
+          entities: [],
+          waypoints: [],
+          paths: [],
+          dboxes: [],
+        };
+      }
     },
 
     // Apply loaded scenario data to stores
@@ -187,7 +262,7 @@ export const useScenarioStore = defineStore("scenario", {
     // Save scenario using file manager
     async saveScenarioAs() {
       const { fileManager } = await import("../services/fileManager.js");
-      const scenarioData = this.buildScenarioData();
+      const scenarioData = await this.buildScenarioData();
 
       const result = await fileManager.saveScenarioAs(
         scenarioData,
@@ -228,38 +303,157 @@ export const useScenarioStore = defineStore("scenario", {
       return await fileManager.exportScenario(scenarioData, format);
     },
 
-    // Auto-save current scenario
-    async performAutoSave() {
-      const { fileManager } = await import("../services/fileManager.js");
-      const scenarioData = this.buildScenarioData();
+    // Auto-save current scenario to LocalStorage (immediate)
+    async performLocalStorageAutoSave() {
+      if (this.autoSave.isInProgress) return false; // Prevent concurrent saves
 
-      if (this.currentFile.path) {
-        // Save to existing file
-        try {
-          if (window.electronAPI) {
-            await window.electronAPI.writeFile(
-              this.currentFile.path,
+      this.autoSave.isInProgress = true;
+      console.log("Starting immediate LocalStorage autosave...");
+
+      try {
+        const scenarioData = await this.buildScenarioData();
+
+        // Use ScenarioStorageService for autosave
+        const { default: ScenarioStorageService } = await import(
+          "../services/ScenarioStorageService.js"
+        );
+        const storageService = new ScenarioStorageService();
+
+        // Generate a scenario ID if we don't have one yet
+        let scenarioId = this.currentFile.scenarioId;
+        if (!scenarioId) {
+          scenarioId = `autosave_${Date.now()}`;
+          this.currentFile.scenarioId = scenarioId;
+        }
+
+        // Save as autosave
+        const success = storageService.saveAutosave(scenarioId, scenarioData);
+
+        if (success) {
+          this.autoSave.lastLocalSaved = new Date();
+          this.autoSave.isDirty = false;
+          this.currentFile.saved = true; // Mark UI as saved
+          console.log("LocalStorage autosave completed successfully");
+        }
+
+        return success;
+      } catch (error) {
+        console.error("LocalStorage autosave failed:", error);
+        return false;
+      } finally {
+        // Reduced delay for debugging (1s instead of 1.6s)
+        setTimeout(() => {
+          this.autoSave.isInProgress = false;
+        }, 1000);
+      }
+    },
+
+    // Auto-save current scenario to JSON file (periodic)
+    async performFileAutoSave(onSuccessCallback = null) {
+      console.log("Starting file-based autosave...");
+
+      // Check if we're in Electron environment
+      const isElectron = !!(
+        window.electronAPI && window.electronAPI.isElectron
+      );
+      console.log("Electron API status:", {
+        electronAPI: !!window.electronAPI,
+        writeAutosaveFile: !!(
+          window.electronAPI && window.electronAPI.writeAutosaveFile
+        ),
+        isElectron: isElectron,
+        userAgent: navigator.userAgent.includes("Electron"),
+      });
+
+      try {
+        const scenarioData = await this.buildScenarioData();
+
+        // Save to JSON file using Electron's file system
+        if (isElectron && window.electronAPI.writeAutosaveFile) {
+          console.log("Using Electron file autosave...");
+
+          // Generate filename with timestamp
+          const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+          const scenarioName = (this.metadata.name || "scenario").replace(
+            /[^a-zA-Z0-9]/g,
+            "_"
+          );
+          const filename = `autosave_${scenarioName}_${timestamp}.json`;
+
+          try {
+            const result = await window.electronAPI.writeAutosaveFile(
+              filename,
               JSON.stringify(scenarioData, null, 2)
             );
-          }
-          this.autoSave.isDirty = false;
-          this.autoSave.lastSaved = new Date();
-          return true;
-        } catch (error) {
-          console.error("Auto-save to file failed:", error);
-        }
-      }
 
-      // Fallback to localStorage
-      const success = fileManager.autoSaveToLocal(
-        scenarioData,
-        `carjan_autosave_${this.metadata.name}`
-      );
-      if (success) {
-        this.autoSave.lastSaved = new Date();
-        this.autoSave.isDirty = false;
+            if (result && result.success) {
+              this.autoSave.lastFileSaved = new Date();
+              this.autoSave.isFileDirty = false;
+              console.log(`File autosave completed: ${result.filePath}`);
+
+              // Call success callback if provided (for toast notifications)
+              if (onSuccessCallback) {
+                onSuccessCallback(result.filePath);
+              }
+
+              return { success: true, filePath: result.filePath };
+            } else {
+              console.error(
+                "File autosave failed:",
+                result?.error || "Unknown error"
+              );
+              return {
+                success: false,
+                error: result?.error || "Unknown error",
+              };
+            }
+          } catch (electronError) {
+            console.error("Electron file autosave error:", electronError);
+            // Fall back to browser download
+            this.performBrowserDownloadFallback(
+              scenarioData,
+              onSuccessCallback
+            );
+            return { success: true, method: "download_fallback" };
+          }
+        } else {
+          console.log(
+            "Electron API not available or not in Electron environment, falling back to browser download..."
+          );
+          return this.performBrowserDownloadFallback(
+            scenarioData,
+            onSuccessCallback
+          );
+        }
+      } catch (error) {
+        console.error("File autosave failed:", error);
+        return { success: false, error: error.message };
       }
-      return success;
+    },
+
+    // Fallback method for browser download
+    performBrowserDownloadFallback(scenarioData, onSuccessCallback) {
+      try {
+        this.downloadAsFile(scenarioData, `autosave_${Date.now()}.json`);
+        this.autoSave.lastFileSaved = new Date();
+        this.autoSave.isFileDirty = false;
+        console.log("File autosave completed via browser download");
+
+        // Call success callback if provided
+        if (onSuccessCallback) {
+          onSuccessCallback("Download");
+        }
+
+        return { success: true, method: "download" };
+      } catch (downloadError) {
+        console.error("Browser download fallback failed:", downloadError);
+        return { success: false, error: downloadError.message };
+      }
+    },
+
+    // Legacy method (backward compatibility)
+    async performAutoSave() {
+      return this.performLocalStorageAutoSave();
     },
 
     // Auto-save to local storage
@@ -437,6 +631,20 @@ if __name__ == "__main__":
       } catch (error) {
         console.error("Failed to load scenario data:", error);
         return false;
+      }
+    },
+
+    // Cleanup method for autosave timers
+    cleanup() {
+      if (this.autoSave.timerId) {
+        clearInterval(this.autoSave.timerId);
+        this.autoSave.timerId = null;
+        console.log("LocalStorage autosave timer cleared");
+      }
+      if (this.autoSave.fileTimerId) {
+        clearInterval(this.autoSave.fileTimerId);
+        this.autoSave.fileTimerId = null;
+        console.log("File autosave timer cleared");
       }
     },
   },

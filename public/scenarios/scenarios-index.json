@@ -15,7 +15,7 @@
       "id": "example-demo",
       "name": "Example Demo",
       "category": "Demo",
-      "map": "town01",
+      "map": "carjan-map01",
       "file": "example-demo.json",
       "description": "Demo scenario showcasing CARJAN features",
       "difficulty": "easy",

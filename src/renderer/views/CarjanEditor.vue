@@ -38,9 +38,12 @@
             <div class="grid-title">
               <i class="pi pi-file-edit"></i>
               <div class="scenario-badge">
-                <span v-if="gridStore.scenarioName">{{
-                  gridStore.scenarioName
-                }}</span>
+                <span v-if="gridStore.scenarioName">
+                  {{ gridStore.scenarioName }}
+                  <span v-if="scenarioStore.isUnsaved" class="unsaved-indicator"
+                    >*</span
+                  >
+                </span>
                 <span v-else class="no-scenario">No Scenario</span>
               </div>
             </div>
@@ -60,7 +63,10 @@
                   :animate="{
                     scale: [1, 1.05, 1],
                   }"
-                  :transition="{ duration: 0.3 }"
+                  :transition="{
+                    duration: 0.3,
+                    ease: 'easeInOut',
+                  }"
                   :key="getCurrentMode()"
                 >
                   <i :class="getCurrentModeIcon()"></i>
@@ -113,16 +119,27 @@
             </div>
           </div>
 
-          <!-- Grid Component -->
-          <CarjanGrid
-            @cell-selected="handleCellSelected"
-            @entity-selected="handleEntitySelected"
-            @path-selected="handlePathSelected"
-            @cell-hovered="handleCellHovered"
-            @toggle-path-mode="togglePathMode"
-            @toggle-dbox-mode="toggleDBoxMode"
-            @quit-editor="handleQuitEditor"
-          />
+          <!-- Grid Component Container with Autosave Progress -->
+          <div class="grid-container">
+            <!-- Autosave Progress Indicator -->
+            <ProgressBar
+              v-if="scenarioStore.autoSave.isInProgress"
+              mode="indeterminate"
+              style="height: 6px"
+              class="autosave-progress-bar"
+            />
+
+            <!-- Grid Component -->
+            <CarjanGrid
+              @cell-selected="handleCellSelected"
+              @entity-selected="handleEntitySelected"
+              @path-selected="handlePathSelected"
+              @cell-hovered="handleCellHovered"
+              @toggle-path-mode="togglePathMode"
+              @toggle-dbox-mode="toggleDBoxMode"
+              @quit-editor="handleQuitEditor"
+            />
+          </div>
         </div>
       </SplitterPanel>
       <!-- Right Panel - Properties -->
@@ -142,6 +159,14 @@
         <div class="status-item">
           <i class="pi pi-cog"></i>
           <span>{{ getCurrentMode() }}</span>
+        </div>
+        <!-- Autosave Status Indicator -->
+        <div class="status-item autosave-status">
+          <i
+            :class="getAutosaveIcon()"
+            :style="{ color: getAutosaveColor() }"
+          ></i>
+          <span>{{ getAutosaveStatus() }}</span>
         </div>
       </div>
       <div class="status-right">
@@ -181,12 +206,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, nextTick } from "vue";
 import { useRoute } from "vue-router";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useGridStore } from "../store/grid";
+import { useScenarioStore } from "../store/scenario";
 import { motion } from "motion-v";
 
 // Components
@@ -195,6 +221,7 @@ import SplitterPanel from "primevue/splitterpanel";
 import Button from "primevue/button";
 import Badge from "primevue/badge";
 import Card from "primevue/card";
+import ProgressBar from "primevue/progressbar";
 import ProgressSpinner from "primevue/progressspinner";
 import Toast from "primevue/toast";
 import ConfirmDialog from "primevue/confirmdialog";
@@ -209,6 +236,7 @@ import SmoothTabs from "../components/SmoothTabs.vue";
 
 // Store and utilities
 const gridStore = useGridStore();
+const scenarioStore = useScenarioStore();
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -246,7 +274,7 @@ const leftPanelTabs = [
 // Helper method to load sample scenario data
 const loadSampleScenarioData = () => {
   gridStore.scenarioName = "Sample Urban Scenario";
-  gridStore.mapName = "Town01";
+  gridStore.mapName = "carjan-map01";
   gridStore.weather = "Clear";
   gridStore.category = "Urban";
 
@@ -290,6 +318,8 @@ const loadScenarioFromQuery = async () => {
     const scenarioId = route.query.scenario;
 
     if (scenarioId) {
+      console.log(`Attempting to load scenario: ${scenarioId}`);
+
       // Load scenario from scenarioService
       const { scenarioService } = await import(
         "../services/scenarioService.js"
@@ -302,6 +332,8 @@ const loadScenarioFromQuery = async () => {
       const scenario = scenarioService.getScenario(scenarioId);
 
       if (scenario && scenario.data) {
+        console.log(`Scenario found: ${scenario.name}`, scenario);
+
         // Use the existing setScenario method which now loads the map automatically
         await gridStore.setScenario({
           scenarioName: `scenario#${scenario.name}`,
@@ -323,10 +355,16 @@ const loadScenarioFromQuery = async () => {
         });
       } else {
         console.warn(`Scenario not found: ${scenarioId}`);
+
+        // Load a default/empty scenario instead of failing completely
+        gridStore.scenarioName = "New Scenario";
+        scenarioStore.autoSave.isDirty = false;
+        scenarioStore.currentFile.saved = true;
+
         toast.add({
           severity: "warn",
           summary: "Scenario Not Found",
-          detail: `Could not find scenario: ${scenarioId}`,
+          detail: `Could not find scenario: ${scenarioId}. Created new scenario instead.`,
           life: 5000,
         });
       }
@@ -335,10 +373,17 @@ const loadScenarioFromQuery = async () => {
     }
   } catch (error) {
     console.error("Error loading scenario from query:", error);
+
+    // Load a default/empty scenario instead of failing completely
+    gridStore.scenarioName = "New Scenario";
+    scenarioStore.autoSave.isDirty = false;
+    scenarioStore.currentFile.saved = true;
+
     toast.add({
       severity: "error",
       summary: "Loading Error",
-      detail: "Failed to load the selected scenario",
+      detail:
+        "Failed to load the selected scenario. Created new scenario instead.",
       life: 5000,
     });
   }
@@ -347,10 +392,30 @@ const loadScenarioFromQuery = async () => {
 // Lifecycle
 onMounted(async () => {
   try {
-    // Initialize grid first
-    gridStore.initializeGrid();
+    // Create notification callback for autosave success
+    const handleAutosaveSuccess = (filePath) => {
+      if (filePath === "Download") {
+        toast.add({
+          severity: "info",
+          summary: "Autosave",
+          detail: "Scenario autosaved via download",
+          life: 3000,
+        });
+      } else {
+        const fileName =
+          filePath.split("\\").pop() ||
+          filePath.split("/").pop() ||
+          "autosave file";
+        toast.add({
+          severity: "success",
+          summary: "Autosave",
+          detail: `Scenario saved to: ${fileName}`,
+          life: 3000,
+        });
+      }
+    };
 
-    // Set default values only if they're not already set
+    // Set default values BEFORE initializing stores to avoid triggering change detection
     if (!gridStore.scenarioName) {
       gridStore.scenarioName = "New Scenario";
     }
@@ -364,19 +429,38 @@ onMounted(async () => {
       gridStore.cameraPosition = "up";
     }
 
+    // Initialize scenario store first with notification callback
+    scenarioStore.initialize(handleAutosaveSuccess);
+
+    // Debug: Check Electron API availability
+    console.log("Electron API check:", {
+      electronAPI: !!window.electronAPI,
+      writeAutosaveFile: !!(
+        window.electronAPI && window.electronAPI.writeAutosaveFile
+      ),
+      isElectron: !!(window.electronAPI && window.electronAPI.isElectron),
+    });
+
+    // Initialize grid after scenario store (this activates change tracking)
+    gridStore.initializeGrid();
+
+    // Ensure initial state is marked as saved immediately after grid init
+    await nextTick(); // Wait for all reactive updates to complete
+    scenarioStore.autoSave.isDirty = false;
+    scenarioStore.currentFile.saved = true;
+    console.log("Post-initialization: Ensured scenario is marked as saved");
+
     // Check if we should load a sample scenario or a specific scenario
     if (route.query.loadSample === "true") {
       loadSampleScenarioData();
     } else if (route.query.scenario) {
       await loadScenarioFromQuery();
+    } else {
+      // For new scenarios, mark as saved after initial setup
+      scenarioStore.autoSave.isDirty = false;
+      scenarioStore.currentFile.saved = true;
+      console.log("Initial scenario setup completed - marked as saved");
     }
-
-    toast.add({
-      severity: "success",
-      summary: "Editor Ready",
-      detail: "CARJAN Editor has been successfully initialized",
-      life: 3000,
-    });
   } catch (error) {
     console.error("Failed to initialize editor:", error);
     toast.add({
@@ -600,7 +684,7 @@ const cycleToNextMode = () => {
   selectMode(nextMode.key);
 };
 
-// Select a mode from the stack
+// Select a mode from the switcher
 const selectMode = (modeKey) => {
   switch (modeKey) {
     case "edit":
@@ -615,24 +699,65 @@ const selectMode = (modeKey) => {
   }
 };
 
-// Finish current mode (Path or DBox)
-const finishCurrentMode = () => {
-  if (gridStore.pathMode) {
-    gridStore.endPathMode();
-    toast.add({
-      severity: "success",
-      summary: "Path Complete",
-      detail: "Path has been completed",
-      life: 2000,
-    });
-  } else if (gridStore.canvasMode === "dbox") {
-    gridStore.canvasMode = "default";
-    toast.add({
-      severity: "success",
-      summary: "DBox Complete",
-      detail: "Decision box creation completed",
-      life: 2000,
-    });
+// Autosave Status Helper Methods
+const getAutosaveIcon = () => {
+  if (scenarioStore.autoSave.isInProgress) {
+    return "pi pi-spin pi-spinner";
+  } else if (scenarioStore.isUnsaved) {
+    return "pi pi-circle";
+  } else if (scenarioStore.autoSave.lastSaved) {
+    return "pi pi-check-circle";
+  } else {
+    return "pi pi-clock";
+  }
+};
+
+const getAutosaveColor = () => {
+  if (scenarioStore.autoSave.isInProgress) {
+    return "#3498db"; // Blue for in progress
+  } else if (scenarioStore.isUnsaved) {
+    return "#f39c12"; // Orange for unsaved
+  } else if (scenarioStore.autoSave.lastSaved) {
+    return "#27ae60"; // Green for saved
+  } else {
+    return "#95a5a6"; // Gray for idle
+  }
+};
+
+const getAutosaveStatus = () => {
+  if (scenarioStore.autoSave.isInProgress) {
+    return "Saving...";
+  } else if (scenarioStore.isUnsaved) {
+    console.log(
+      "Status: Unsaved - isDirty:",
+      scenarioStore.autoSave.isDirty,
+      "saved:",
+      scenarioStore.currentFile.saved
+    );
+    return "Unsaved";
+  } else if (scenarioStore.autoSave.lastLocalSaved) {
+    const timeDiff =
+      Date.now() - new Date(scenarioStore.autoSave.lastLocalSaved).getTime();
+    const secondsAgo = Math.floor(timeDiff / 1000);
+
+    // Show file save status if available
+    const fileStatus = scenarioStore.isFileUnsaved ? " (File pending)" : "";
+
+    if (secondsAgo < 60) {
+      return `Saved ${secondsAgo}s ago${fileStatus}`;
+    } else {
+      const minutesAgo = Math.floor(secondsAgo / 60);
+      return `Saved ${minutesAgo}m ago${fileStatus}`;
+    }
+  } else {
+    console.log(
+      "Status: Initial - isDirty:",
+      scenarioStore.autoSave.isDirty,
+      "saved:",
+      scenarioStore.currentFile.saved
+    );
+    const fileStatus = scenarioStore.isFileUnsaved ? " (File pending)" : "";
+    return `Saved${fileStatus}`; // Changed from "Not saved" to "Saved" for initial state
   }
 };
 
@@ -904,6 +1029,73 @@ watch(
   font-size: 0.75rem;
 }
 
+/* Grid Container */
+.grid-container {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Autosave Progress Bar */
+.autosave-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(128, 128, 128, 0.3) !important; /* Grauer Hintergrund */
+}
+
+:deep(.autosave-progress-bar .p-progressbar) {
+  background: rgba(128, 128, 128, 0.3) !important; /* Grauer Container */
+}
+
+:deep(.autosave-progress-bar .p-progressbar-value) {
+  background: rgba(
+    255,
+    255,
+    255,
+    0.9
+  ) !important; /* Weiße Fortschrittsbalken */
+}
+
+/* Autosave Status Indicator */
+.autosave-status {
+  transition: all 0.3s ease;
+}
+
+.autosave-status i.pi-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Unsaved Changes Indicator */
+.unsaved-indicator {
+  color: #f39c12;
+  font-weight: bold;
+  margin-left: 4px;
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0.3;
+  }
+}
+
 /* Animation for smooth transitions */
 .carjan-editor * {
   transition: background-color 0.3s ease, border-color 0.3s ease,
@@ -1007,42 +1199,6 @@ watch(
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-/* Responsive design */
-@media (max-width: 1200px) {
-  .grid-header {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .grid-controls {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 768px) {
-  .grid-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-
-  .grid-controls {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .status-bar {
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: stretch;
-  }
-  .status-left,
-  .status-right {
-    justify-content: center;
-  }
 }
 
 /* Finish Mode Button */
